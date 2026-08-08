@@ -11,6 +11,7 @@ import {
   Trash2,
   AlertTriangle,
   RefreshCw,
+  RotateCcw,
   Image as ImageIcon,
   Laptop,
   Cpu,
@@ -22,12 +23,26 @@ import {
 import { toast } from 'sonner';
 import { useSettingsStore } from '../../store/settings';
 import { useTheme } from '../../hooks/useTheme';
+import { useUpdater } from '../../hooks/useUpdater';
 import { resetDatabaseToProduction } from '../../lib/db';
 import { ProTechLogo } from '../../components/shared/ProTechLogo';
 import { SyncSettingsComponent } from '../../components/sync/SyncSettingsComponent';
 
 export const SettingsPage: React.FC = () => {
   const { settings, updateSettingsBatch, updateSetting } = useSettingsStore();
+  const updater = useUpdater();
+  const updateStatusText =
+    updater.state === 'checking'
+      ? 'Checking for updates…'
+      : updater.state === 'available' || updater.state === 'downloading'
+        ? `Downloading update… ${updater.percent}%`
+        : updater.state === 'downloaded'
+          ? 'Update ready — restart to install.'
+          : updater.state === 'uptodate'
+            ? 'You are on the latest version.'
+            : updater.state === 'error'
+              ? 'Update check failed.'
+              : 'New versions are checked automatically on launch.';
   const { isDark, toggleTheme } = useTheme('dark');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -264,6 +279,53 @@ export const SettingsPage: React.FC = () => {
               />
             </div>
           </div>
+        </div>
+
+        {/* Software Updates */}
+        <div className="card-container space-y-4">
+          <h2 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-2">
+            Software Updates
+          </h2>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-0.5">
+              <p className="text-sm font-bold text-slate-900 dark:text-white">Application Updates</p>
+              <p className="text-xs text-slate-500">{updateStatusText}</p>
+              {updater.error && (
+                <p className="text-[11px] text-rose-600 dark:text-rose-400 font-mono break-words">{updater.error}</p>
+              )}
+            </div>
+
+            {updater.state === 'downloaded' ? (
+              <button
+                type="button"
+                onClick={updater.install}
+                className="btn-primary"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>Restart & Install</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => updater.check(true)}
+                disabled={updater.state === 'checking' || updater.state === 'downloading'}
+                className="btn-secondary"
+              >
+                <RefreshCw
+                  className={`w-4 h-4 ${updater.state === 'checking' ? 'animate-spin' : ''}`}
+                />
+                <span>Check for Updates</span>
+              </button>
+            )}
+          </div>
+
+          <p className="text-[11px] text-slate-400 dark:text-slate-500 leading-relaxed">
+            Updates are downloaded from a self-hosted feed configured at build time
+            (or via the <code className="font-mono">UPDATE_FEED_URL</code> environment variable).
+            Checks are silent when offline; portable builds update by downloading a new
+            portable version manually.
+          </p>
         </div>
 
         {/* Theme Preferences */}

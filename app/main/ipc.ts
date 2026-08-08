@@ -1,6 +1,7 @@
 import { app, dialog, ipcMain } from 'electron';
 import { join, isAbsolute } from 'node:path';
-import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
+import { writeFileSync, mkdirSync, readFileSync } from 'node:fs';
+import { checkForUpdates, quitAndInstall, canCheckForUpdates } from './updater';
 import {
   query,
   execute,
@@ -100,4 +101,17 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('app:getUserDataPath', () => app.getPath('userData'));
+
+  ipcMain.handle('update:check', async (_e, manual: unknown) => {
+    if (!canCheckForUpdates()) {
+      return { ok: false, error: 'Auto-update is only available in the packaged app.' };
+    }
+    return checkForUpdates(manual === true);
+  });
+
+  ipcMain.handle('update:install', () => {
+    quitAndInstall();
+  });
+
+  ipcMain.handle('update:canCheck', () => canCheckForUpdates());
 }

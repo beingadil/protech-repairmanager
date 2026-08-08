@@ -3,9 +3,32 @@ import { join } from 'node:path';
 import { writeFileSync } from 'node:fs';
 import { openDatabase, closeDatabase } from './db';
 import { registerIpcHandlers } from './ipc';
+import { initUpdater, checkForUpdates, canCheckForUpdates, onUpdateEvent } from './updater';
+import { log } from './log';
 import { PRODUCTION_CSP } from '../../vite/csp';
 
 let mainWindow: BrowserWindow | null = null;
+
+// A stray unhandled rejection/exception in the main process must never take
+// the shop's app down silently — log it and keep running (Node 22+ defaults
+// --unhandled-rejections=throw, which would crash the whole app).
+process.on('unhandledRejection', (reason) => {
+  log.error(`unhandledRejection: ${reason instanceof Error ? reason.stack || reason.message : String(reason)}`);
+});
+process.on('uncaughtException', (err) => {
+  log.error(`uncaughtException: ${err.stack || err.message}`);
+});
+
+// SMOKE_TEST state (module scope so both createWindow and whenReady can use it).
+const smokeLines: string[] = [];
+const smokeOutFile = process.env.SMOKE_TEST_OUT || 'smoke-result.log';
+function smokeFlush() {
+  try {
+    writeFileSync(smokeOutFile, smokeLines.join('\n'), 'utf8');
+  } catch {
+    /* ignore */
+  }
+}
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -32,43 +55,38 @@ function createWindow(): void {
     mainWindow = null;
   });
 
-  // SMOKE_TEST mode: capture renderer console + auto-quit, write results to a file
-  // (stdout is buffered and lost on app.exit).
+  // SMOKE_TEST mode: capture renderer console + auto-quit, write results to a
+  // file (stdout is buffered and lost on app.exit).
   if (process.env.SMOKE_TEST) {
-    const lines: string[] = [];
-    const outFile = process.env.SMOKE_TEST_OUT || 'smoke-result.log';
-    const flush = () => {
-      try {
-        writeFileSync(outFile, lines.join('\n'), 'utf8');
-      } catch {
-        /* ignore */
-      }
-    };
-    lines.push(`smoke-start ${new Date().toISOString()}`);
-    flush();
+    smokeLines.push(`smoke-start ${new Date().toISOString()}`);
+    smokeFlush();
     mainWindow.webContents.on('console-message', (event) => {
       const msg = event.message ?? event;
-      lines.push(`[renderer] ${typeof msg === 'string' ? msg : JSON.stringify(msg)}`);
+      smokeLines.push(`[renderer] ${typeof msg === 'string' ? msg : JSON.stringify(msg)}`);
     });
     mainWindow.webContents.on('did-finish-load', () => {
-      lines.push('did-finish-load');
-      flush();
+      smokeLines.push('did-finish-load');
+      smokeFlush();
       // Exercise the full IPC + better-sqlite3 path.
       mainWindow?.webContents
         .executeJavaScript(
           `window.prodata.db.query('SELECT COUNT(*) as c FROM settings').then(r => JSON.stringify({settingsRows: r.length, ok: true})).catch(e => JSON.stringify({ok: false, err: String(e)}))`
         )
-        .then((res) => lines.push(`db-ipc-check: ${res}`))
-        .catch((e) => lines.push(`db-ipc-check-error: ${String(e)}`));
+        .then((res) => smokeLines.push(`db-ipc-check: ${res}`))
+        .catch((e) => smokeLines.push(`db-ipc-check-error: ${String(e)}`));
     });
     mainWindow.webContents.on('did-fail-load', (_e, code, desc) => {
-      lines.push(`did-fail-load code=${code} desc=${desc}`);
+      smokeLines.push(`did-fail-load code=${code} desc=${desc}`);
     });
+    mainWindow.webContents.on('render-process-gone', (_e, details) => {
+      smokeLines.push(`renderer-gone: ${JSON.stringify(details)}`);
+    });
+    const smokeDuration = Number(process.env.SMOKE_DURATION_MS || 12000);
     setTimeout(() => {
-      lines.push('SMOKE_TEST_COMPLETE');
-      flush();
+      smokeLines.push('SMOKE_TEST_COMPLETE');
+      smokeFlush();
       app.exit(0);
-    }, 12000);
+    }, smokeDuration);
   }
 
   const devUrl = process.env['ELECTRON_RENDERER_URL'];
@@ -78,6 +96,11 @@ function createWindow(): void {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
   }
 }
+
+// Shop PCs often have old/flaky GPU drivers; the UI is simple React/Tailwind
+// and runs perfectly on the CPU. Disabling hardware acceleration prevents
+// random GPU-process crashes from taking the app down.
+app.disableHardwareAcceleration();
 
 // SMOKE_TEST bypasses the single-instance lock so repeated test launches work.
 const gotLock = process.env.SMOKE_TEST ? true : app.requestSingleInstanceLock();
@@ -115,6 +138,33 @@ if (!gotLock) {
 
     registerIpcHandlers();
     createWindow();
+
+    initUpdater(() => mainWindow);
+    if (process.env.SMOKE_TEST) {
+      onUpdateEvent((e) => {
+        smokeLines.push(`update-event: ${JSON.stringify(e)}`);
+      });
+      // Exercise the update check pipeline against the configured feed.
+      checkForUpdates(false).then(
+        (r) => {
+          smokeLines.push(`update-check: ${JSON.stringify(r)}`);
+          smokeFlush();
+        },
+        (e) => {
+          smokeLines.push(`update-check-rejected: ${String(e)}`);
+          smokeFlush();
+        }
+      );
+    }
+
+    // Silent background update check shortly after launch.
+    if (!process.env.SMOKE_TEST && canCheckForUpdates()) {
+      setTimeout(() => {
+        checkForUpdates(false).catch((err) => {
+          log.warn(`[updater] background check failed: ${err}`);
+        });
+      }, 10_000);
+    }
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();

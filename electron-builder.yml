@@ -9,6 +9,13 @@ files:
 asar: true
 npmRebuild: true
 
+# Auto-update feed (electron-updater reads app-update.yml generated from this).
+# CHANGE ME to your update server. Runtime override: UPDATE_FEED_URL env var
+# (no rebuild needed). Upload release/latest.yml + the installer .exe there.
+publish:
+  provider: generic
+  url: https://updates.protech.example.com/
+
 win:
   target:
     - nsis

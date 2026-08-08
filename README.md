@@ -87,12 +87,24 @@ the required tables before it replaces the live database. Restores are atomic
 2. **Branded icon** — done: `build/icon.png` (512×512, generated from
    `build/icon.svg` via `npx electron scripts/generate-icon.mjs`) is wired into
    `electron-builder.yml` and embedded in the installer/exe.
-3. **Auto-update (optional)** — the app is offline-first by design; if you later
-   want updates, add `electron-updater` + a release server (or use the portable
-   exe as the distribution mechanism).
+3. **Auto-update feed** — auto-updates are implemented (electron-updater). To
+   ship an update: bump `version` in `package.json`, run
+   `npm run dist` (or `npx electron-builder --win nsis`), then upload the new
+   installer `.exe` + `.blockmap` + `latest.yml` from `release/` to your feed
+   server. The app checks on launch (silent) and via *Settings → Check for
+   updates*, downloads in the background, and installs on quit.
+   `UPDATE_FEED_URL` overrides the feed at runtime for staging/testing.
 4. **Encryption at rest (optional)** — currently the `.db` file is plaintext on
    disk, matching the single-admin local use case. If backups will travel or
    laptops can be lost, move to SQLCipher or OS disk encryption (BitLocker).
+
+### Troubleshooting
+
+- **App fails to launch on a PC with aggressive antivirus / restricted
+  sandbox** (crash at startup, blank window, or "GPU process isn't usable"):
+  launch with `--no-sandbox`. This disables Chromium's OS-level sandbox
+  (contextIsolation and nodeIntegration:false still protect the renderer).
+  Normal Windows machines do not need this flag.
 
 ## Project layout
 

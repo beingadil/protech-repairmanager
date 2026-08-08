@@ -24,6 +24,28 @@ export interface ProdataBridge {
   app: {
     getUserDataPath(): Promise<string>;
   };
+  updater: {
+    check(manual?: boolean): Promise<{ ok: boolean; error?: string }>;
+    install(): Promise<void>;
+    canCheck(): Promise<boolean>;
+    onEvent(cb: (e: UpdateEvent) => void): () => void;
+  };
+}
+
+export type UpdateEventType =
+  | 'checking'
+  | 'available'
+  | 'not-available'
+  | 'progress'
+  | 'downloaded'
+  | 'error';
+
+export interface UpdateEvent {
+  type: UpdateEventType;
+  manual: boolean;
+  info?: { version?: string; releaseDate?: string };
+  percent?: number;
+  error?: string;
 }
 
 declare global {

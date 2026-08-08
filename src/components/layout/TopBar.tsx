@@ -5,6 +5,7 @@ import { useUIStore } from '../../store/ui';
 import { useSettingsStore } from '../../store/settings';
 import { useSettingsStore as useSyncStore } from '../../store/useSettingsStore';
 import { useTheme } from '../../hooks/useTheme';
+import { UpdateIndicator } from '../update/UpdateIndicator';
 
 export const TopBar: React.FC = () => {
   const { toggleSidebar, setCommandPaletteOpen } = useUIStore();
@@ -99,6 +100,8 @@ export const TopBar: React.FC = () => {
 
       {/* Right: Global Command Search Trigger + Light/Dark Toggle + Quick Add */}
       <div className="flex items-center gap-3">
+        {/* Auto-update status pill */}
+        <UpdateIndicator />
         {/* Cmd+K Search trigger */}
         <button
           onClick={() => setCommandPaletteOpen(true)}
