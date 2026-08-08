@@ -84,8 +84,9 @@ the required tables before it replaces the live database. Restores are atomic
    `WIN_CSC_LINK`) so Windows SmartScreen stops warning users. Add
    `"postinstall": "electron-builder install-app-deps"` to `package.json` on the
    build machine.
-2. **Branded icon** — drop a 512×512 `build/icon.ico` and uncomment `icon:` in
-   `electron-builder.yml`.
+2. **Branded icon** — done: `build/icon.png` (512×512, generated from
+   `build/icon.svg` via `npx electron scripts/generate-icon.mjs`) is wired into
+   `electron-builder.yml` and embedded in the installer/exe.
 3. **Auto-update (optional)** — the app is offline-first by design; if you later
    want updates, add `electron-updater` + a release server (or use the portable
    exe as the distribution mechanism).
