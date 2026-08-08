@@ -1,0 +1,6 @@
+{
+  "name": "ProTech Services Repair Manager",
+  "description": "Offline-first PC, Laptop, Industrial Equipment & Repair Shop Management Application with local SQLite persistence",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
