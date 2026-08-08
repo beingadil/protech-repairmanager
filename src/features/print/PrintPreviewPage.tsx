@@ -189,7 +189,7 @@ export const PrintPreviewPage: React.FC = () => {
           </div>
 
           {/* Charges Banner */}
-          <div style={{ borderTop: '2px solid #000', borderBottom: '2px solid #000', padding: '8px 0', margin: '12px 0', display: 'flex', justify: 'space-between', alignItems: 'center' }}>
+          <div style={{ borderTop: '2px solid #000', borderBottom: '2px solid #000', padding: '8px 0', margin: '12px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '12px', fontWeight: 'bold' }}>Total Repair Charges:</span>
             <span style={{ fontSize: '16px', fontWeight: 'bold' }}>{formatCurrency(job.charges)}</span>
           </div>
@@ -202,7 +202,7 @@ export const PrintPreviewPage: React.FC = () => {
           </div>
 
           {/* QR Code and Footer Signature */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyBetween: 'space-between', borderTop: '1px dashed #000', paddingTop: '10px', marginTop: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px dashed #000', paddingTop: '10px', marginTop: '10px' }}>
             <div style={{ flex: 1, fontSize: '9px', color: '#444' }}>
               <p style={{ margin: '0 0 2px 0' }}>* Please present this ticket at collection.</p>
               <p style={{ margin: 0 }}>* Not responsible for data loss. Backup data before repair.</p>

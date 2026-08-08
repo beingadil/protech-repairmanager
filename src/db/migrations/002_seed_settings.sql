@@ -1,7 +1,7 @@
--- Migration 002: Seed default settings
-INSERT OR IGNORE INTO settings (key, value) VALUES ('shop_name', 'ProData System');
-INSERT OR IGNORE INTO settings (key, value) VALUES ('shop_address', 'Main Service Center, Plaza Street, City');
-INSERT OR IGNORE INTO settings (key, value) VALUES ('shop_mobile', '+92 300 1234567');
+-- Migration 002: Seed default settings (ProTech Services)
+INSERT OR IGNORE INTO settings (key, value) VALUES ('shop_name', 'ProTech Services');
+INSERT OR IGNORE INTO settings (key, value) VALUES ('shop_address', 'Jamil Ahmad Computer Market, Munir Chowk, Gujranwala / Flat 1, Sadiq Plaza, Lahore');
+INSERT OR IGNORE INTO settings (key, value) VALUES ('shop_mobile', '0300-0404004');
 INSERT OR IGNORE INTO settings (key, value) VALUES ('logo_path', '');
 INSERT OR IGNORE INTO settings (key, value) VALUES ('theme', 'dark');
 INSERT OR IGNORE INTO settings (key, value) VALUES ('thermal_size', '80');

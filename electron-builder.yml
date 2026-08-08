@@ -1,0 +1,29 @@
+appId: com.protech.repair-manager
+productName: ProTech Services Repair Manager
+directories:
+  output: release
+files:
+  - out/**
+  - package.json
+  - "!**/*.map"
+asar: true
+npmRebuild: true
+
+win:
+  target:
+    - nsis
+    - portable
+  # icon: build/icon.ico   # TODO: add branded icon (512x512 .ico) before release
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  shortcutName: ProTech Services
+  deleteAppDataOnUninstall: false
+
+portable:
+  artifactName: ${productName}-portable-${version}.exe
+
+# Keep default Electron icon until a branded icon is added. Notarization/
+# code signing is a separate, user-owned step (requires a purchased cert).

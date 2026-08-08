@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createHashRouter } from 'react-router-dom';
 import { AppShell } from './components/layout/AppShell';
 import { DashboardPage } from './features/dashboard/DashboardPage';
 import { JobListPage } from './features/jobs/JobListPage';
@@ -12,7 +12,9 @@ import { NotificationsPage } from './features/notifications/NotificationsPage';
 import { BackupPage } from './features/backup/BackupPage';
 import { SettingsPage } from './features/settings/SettingsPage';
 
-export const router = createBrowserRouter([
+// Hash-based router: works identically under Vite dev (http) and Electron
+// (file://) — a file URL cannot be matched by a path-based router.
+export const router = createHashRouter([
   {
     path: '/',
     element: <AppShell />,

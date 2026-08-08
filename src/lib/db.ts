@@ -1,6 +1,22 @@
 import initSqlJs, { Database } from 'sql.js';
 import sqlWasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
 import { validateBackupBytes, validateBackupSchema, backupErrorMessage } from './backup-validate';
+import { applyMigrations, type MigrationExecutor } from './migrations';
+import {
+  electronQuery,
+  electronExecute,
+  electronExecuteRaw,
+  electronExportDatabaseBinary,
+  electronRestoreDatabaseBinary,
+  electronResetDatabaseToProduction
+} from './db-electron';
+
+import m001 from '../db/migrations/001_initial_schema.sql?raw';
+import m002 from '../db/migrations/002_seed_settings.sql?raw';
+import m003 from '../db/migrations/003_indexes.sql?raw';
+import m004 from '../db/migrations/004_purge_sample_data.sql?raw';
+
+const MIGRATIONS = [m001, m002, m003, m004];
 
 let dbInstance: Database | null = null;
 let dbInitPromise: Promise<Database> | null = null;
@@ -112,102 +128,23 @@ async function loadDbFromStorage(): Promise<Uint8Array | null> {
   }
 }
 
-// SQL migration scripts
-const MIGRATIONS = [
-  `
-  -- Table: customers
-  CREATE TABLE IF NOT EXISTS customers (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    mobile TEXT,
-    address TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE INDEX IF NOT EXISTS idx_customers_mobile ON customers(mobile);
-  CREATE INDEX IF NOT EXISTS idx_customers_name ON customers(name);
-
-  -- Table: jobs
-  CREATE TABLE IF NOT EXISTS jobs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    token_number TEXT NOT NULL UNIQUE,
-    customer_id INTEGER NOT NULL REFERENCES customers(id),
-    job_type TEXT NOT NULL DEFAULT 'laptop',
-    serial_no TEXT,
-    model TEXT,
-    ram TEXT,
-    hard TEXT,
-    processor TEXT,
-    symptoms TEXT,
-    receive_date TEXT NOT NULL,
-    return_date TEXT,
-    charges REAL DEFAULT 0,
-    has_charger INTEGER NOT NULL DEFAULT 0,
-    payment_status TEXT NOT NULL DEFAULT 'due',
-    deliver_status TEXT NOT NULL DEFAULT 'pending',
-    notes TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-    deleted_at TEXT
-  );
-
-  CREATE INDEX IF NOT EXISTS idx_jobs_customer ON jobs(customer_id);
-  CREATE INDEX IF NOT EXISTS idx_jobs_token ON jobs(token_number);
-  CREATE INDEX IF NOT EXISTS idx_jobs_receive_date ON jobs(receive_date);
-  CREATE INDEX IF NOT EXISTS idx_jobs_payment ON jobs(payment_status);
-  CREATE INDEX IF NOT EXISTS idx_jobs_deliver ON jobs(deliver_status);
-  CREATE INDEX IF NOT EXISTS idx_jobs_deleted ON jobs(deleted_at);
-
-  -- Table: job_notifications
-  CREATE TABLE IF NOT EXISTS job_notifications (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    job_id INTEGER NOT NULL REFERENCES jobs(id),
-    channel TEXT NOT NULL,
-    message TEXT NOT NULL,
-    sent_at TEXT NOT NULL DEFAULT (datetime('now')),
-    status TEXT NOT NULL DEFAULT 'sent'
-  );
-
-  -- Table: backup_log
-  CREATE TABLE IF NOT EXISTS backup_log (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    file_path TEXT NOT NULL,
-    file_name TEXT NOT NULL,
-    size_bytes INTEGER,
-    backup_type TEXT NOT NULL DEFAULT 'manual',
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  -- Table: settings
-  CREATE TABLE IF NOT EXISTS settings (
-    key TEXT PRIMARY KEY,
-    value TEXT NOT NULL
-  );
-  `,
-  `
-  -- Seed settings if empty
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('shop_name', 'ProTech Services');
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('shop_address', 'Jamil Ahmad Computer Market, Munir Chowk, Gujranwala / Flat 1, Sadiq Plaza, Lahore');
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('shop_mobile', '0300-0404004');
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('logo_path', '');
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('theme', 'dark');
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('thermal_size', '80');
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('default_charges', '1500');
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('auto_backup', '1');
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('token_counter', '1000');
-  `,
-  `
-  CREATE INDEX IF NOT EXISTS idx_jobs_search ON jobs(token_number, serial_no, model);
-  CREATE INDEX IF NOT EXISTS idx_customers_search ON customers(name, mobile);
-  `,
-  `
-  -- Purge initial dummy/seeded sample data if present
-  DELETE FROM job_notifications WHERE job_id IN (SELECT id FROM jobs WHERE token_number IN ('TK-1001', 'TK-1002', 'TK-1003', 'TK-1004', 'TK-1005'));
-  DELETE FROM jobs WHERE token_number IN ('TK-1001', 'TK-1002', 'TK-1003', 'TK-1004', 'TK-1005');
-  DELETE FROM customers WHERE name IN ('Ahmad Hassan', 'Bilal Tariq', 'Usman Khalid', 'Zainab Raza', 'Kamran Ali');
-  `
-];
+/** Debounced persistence: mutations are batched, flushed shortly after. */
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
+function schedulePersist() {
+  if (persistTimer) clearTimeout(persistTimer);
+  persistTimer = setTimeout(() => {
+    persistTimer = null;
+    saveDbToStorage();
+  }, 400);
+}
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    if (persistTimer) {
+      clearTimeout(persistTimer);
+      saveDbToStorage();
+    }
+  });
+}
 
 async function initSql(): Promise<ReturnType<typeof initSqlJs>> {
   // Local WASM only. No CDN fallbacks: this app must work fully offline and
@@ -217,7 +154,30 @@ async function initSql(): Promise<ReturnType<typeof initSqlJs>> {
   });
 }
 
-export async function getDb(): Promise<Database> {
+function makeExecutor(db: Database): MigrationExecutor {
+  return {
+    run: (sql) => db.run(sql),
+    query: (sql) => {
+      const stmt = db.prepare(sql);
+      const rows: unknown[] = [];
+      while (stmt.step()) rows.push(stmt.getAsObject());
+      stmt.free();
+      return rows;
+    },
+    transaction: (fn) => {
+      db.run('BEGIN');
+      try {
+        fn();
+        db.run('COMMIT');
+      } catch (e) {
+        db.run('ROLLBACK');
+        throw e;
+      }
+    }
+  };
+}
+
+async function webGetDb(): Promise<Database> {
   if (dbInstance) return dbInstance;
   if (dbInitPromise) return dbInitPromise;
 
@@ -236,14 +196,7 @@ export async function getDb(): Promise<Database> {
       dbInstance = new SQL.Database();
     }
 
-    // Run migrations
-    for (const sql of MIGRATIONS) {
-      dbInstance.run(sql);
-    }
-
-    // Seed sample data if database is brand new and hasn't been seeded yet
-    seedSampleDataIfEmpty(dbInstance);
-
+    applyMigrations(makeExecutor(dbInstance), MIGRATIONS);
     saveDbToStorage();
     return dbInstance;
   })();
@@ -251,11 +204,15 @@ export async function getDb(): Promise<Database> {
   return dbInitPromise;
 }
 
-export async function resetDatabaseToProduction(): Promise<void> {
-  const db = await getDb();
+export async function getDb(): Promise<Database> {
+  return webGetDb();
+}
 
-  // Drop all existing tables
+async function webResetDatabaseToProduction(): Promise<void> {
+  const db = await webGetDb();
+
   db.run(`
+    DROP TABLE IF EXISTS schema_version;
     DROP TABLE IF EXISTS job_notifications;
     DROP TABLE IF EXISTS jobs;
     DROP TABLE IF EXISTS customers;
@@ -263,22 +220,14 @@ export async function resetDatabaseToProduction(): Promise<void> {
     DROP TABLE IF EXISTS settings;
   `);
 
-  // Re-run migrations
-  for (const sql of MIGRATIONS) {
-    db.run(sql);
-  }
+  applyMigrations(makeExecutor(db), MIGRATIONS);
 
-  // Explicitly mark as seeded so seedSampleDataIfEmpty does not re-populate sample jobs
-  db.run("INSERT OR REPLACE INTO settings (key, value) VALUES ('has_seeded', '1');");
-
-  // Clear storage
   await clearIndexedDB();
   if (typeof window !== 'undefined') {
     localStorage.removeItem(DB_STORAGE_KEY);
     localStorage.removeItem('app_theme');
   }
 
-  // Save fresh empty state
   saveDbToStorage();
 }
 
@@ -292,8 +241,8 @@ export function saveDbToStorage() {
   }
 }
 
-export async function query<T = any>(sql: string, params: any[] = []): Promise<T[]> {
-  const db = await getDb();
+async function webQuery<T = any>(sql: string, params: any[] = []): Promise<T[]> {
+  const db = await webGetDb();
   const stmt = db.prepare(sql);
   if (params.length > 0) stmt.bind(params);
 
@@ -305,24 +254,24 @@ export async function query<T = any>(sql: string, params: any[] = []): Promise<T
   return results;
 }
 
-export async function execute(sql: string, params: any[] = []): Promise<void> {
-  const db = await getDb();
+async function webExecute(sql: string, params: any[] = []): Promise<void> {
+  const db = await webGetDb();
   db.run(sql, params);
-  saveDbToStorage();
+  schedulePersist();
 }
 
 /**
  * Internal only: raw SQL execution used by migrations. App code should use
  * the parameterized `execute` / `query` helpers instead.
  */
-export async function executeRaw(sql: string): Promise<void> {
-  const db = await getDb();
+async function webExecuteRaw(sql: string): Promise<void> {
+  const db = await webGetDb();
   db.run(sql);
-  saveDbToStorage();
+  schedulePersist();
 }
 
-export async function exportDatabaseBinary(): Promise<Uint8Array> {
-  const db = await getDb();
+async function webExportDatabaseBinary(): Promise<Uint8Array> {
+  const db = await webGetDb();
   return db.export();
 }
 
@@ -331,7 +280,7 @@ export async function exportDatabaseBinary(): Promise<Uint8Array> {
  * schema are accepted. A crafted .db file must not be able to crash the app
  * or smuggle in triggers/views that run on the next query.
  */
-export async function restoreDatabaseBinary(uint8Array: Uint8Array): Promise<void> {
+async function webRestoreDatabaseBinary(uint8Array: Uint8Array): Promise<void> {
   const headerError = validateBackupBytes(uint8Array);
   if (headerError) {
     throw new Error(backupErrorMessage(headerError));
@@ -363,23 +312,27 @@ export async function restoreDatabaseBinary(uint8Array: Uint8Array): Promise<voi
   // migrations the restored database may be missing.
   dbInstance?.close();
   dbInstance = candidate;
-  for (const sql of MIGRATIONS) {
-    dbInstance.run(sql);
-  }
-  seedSampleDataIfEmpty(dbInstance);
+  applyMigrations(makeExecutor(dbInstance), MIGRATIONS);
   saveDbToStorage();
 }
 
-function seedSampleDataIfEmpty(db: Database) {
-  // Completely clear any remaining sample seed jobs
-  try {
-    db.run(`
-      DELETE FROM job_notifications WHERE job_id IN (SELECT id FROM jobs WHERE token_number IN ('TK-1001', 'TK-1002', 'TK-1003', 'TK-1004', 'TK-1005'));
-      DELETE FROM jobs WHERE token_number IN ('TK-1001', 'TK-1002', 'TK-1003', 'TK-1004', 'TK-1005');
-      DELETE FROM customers WHERE name IN ('Ahmad Hassan', 'Bilal Tariq', 'Usman Khalid', 'Zainab Raza', 'Kamran Ali');
-      INSERT OR REPLACE INTO settings (key, value) VALUES ('has_seeded', '1');
-    `);
-  } catch (e) {
-    // Ignore error if cleanup fails
-  }
-}
+/**
+ * Facade: in the Electron desktop app the database lives in the main process
+ * (better-sqlite3); in the browser it is sql.js + IndexedDB. Every caller
+ * imports from here, so the rest of the app is engine-agnostic.
+ */
+const IS_ELECTRON =
+  typeof window !== 'undefined' && Boolean((window as any).prodata?.db);
+
+export const query = IS_ELECTRON ? electronQuery : webQuery;
+export const execute = IS_ELECTRON ? electronExecute : webExecute;
+export const executeRaw = IS_ELECTRON ? electronExecuteRaw : webExecuteRaw;
+export const exportDatabaseBinary = IS_ELECTRON
+  ? electronExportDatabaseBinary
+  : webExportDatabaseBinary;
+export const restoreDatabaseBinary = IS_ELECTRON
+  ? electronRestoreDatabaseBinary
+  : webRestoreDatabaseBinary;
+export const resetDatabaseToProduction = IS_ELECTRON
+  ? electronResetDatabaseToProduction
+  : webResetDatabaseToProduction;
