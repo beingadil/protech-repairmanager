@@ -74,6 +74,22 @@ function createWindow(): void {
         )
         .then((res) => smokeLines.push(`db-ipc-check: ${res}`))
         .catch((e) => smokeLines.push(`db-ipc-check-error: ${String(e)}`));
+    // Exercise the real job-save SQL path (customer + job INSERT) through the
+    // IPC bridge, inside a transaction that is rolled back so the shop's live
+    // database is untouched. Proves the fixed single-quoted literals run on
+    // strict better-sqlite3 end-to-end.
+    mainWindow?.webContents
+      .executeJavaScript(
+        `window.prodata.db.executeRaw('BEGIN')
+          .then(() => window.prodata.db.execute("INSERT INTO customers (name, mobile, address, created_at, updated_at) VALUES (?, ?, ?, datetime('now'), datetime('now'))", ['Smoke Test', '0000', '']))
+          .then(() => window.prodata.db.query('SELECT last_insert_rowid() as id'))
+          .then((r) => window.prodata.db.execute("INSERT INTO jobs (token_number, customer_id, job_type, receive_date, charges, has_charger, payment_status, deliver_status, created_at, updated_at) VALUES (?, ?, 'laptop', datetime('now'), 100, 0, 'due', 'pending', datetime('now'), datetime('now'))", ['TK-SMOKE', r[0].id]))
+          .then(() => window.prodata.db.query("SELECT token_number FROM jobs WHERE token_number = 'TK-SMOKE'"))
+          .then((rows) => window.prodata.db.executeRaw('ROLLBACK').then(() => JSON.stringify({jobSaveOk: rows.length === 1, token: rows[0]?.token_number})))
+          .catch((e) => window.prodata.db.executeRaw('ROLLBACK').then(() => JSON.stringify({jobSaveOk: false, err: String(e)})))`
+      )
+      .then((res) => smokeLines.push(`job-save-check: ${res}`))
+      .catch((e) => smokeLines.push(`job-save-check-error: ${String(e)}`));
     });
     mainWindow.webContents.on('did-fail-load', (_e, code, desc) => {
       smokeLines.push(`did-fail-load code=${code} desc=${desc}`);

@@ -85,7 +85,7 @@ export const AddJobPage: React.FC = () => {
           finalCustomerId = existingCust[0].id;
         } else {
           await execute(
-            'INSERT INTO customers (name, mobile, address, created_at, updated_at) VALUES (?, ?, ?, datetime("now"), datetime("now"))',
+            `INSERT INTO customers (name, mobile, address, created_at, updated_at) VALUES (?, ?, ?, datetime('now'), datetime('now'))`,
             [customerName, customerMobile, customerAddress]
           );
           const newCustRes = await query<{ id: number }>('SELECT last_insert_rowid() as id');
@@ -98,7 +98,7 @@ export const AddJobPage: React.FC = () => {
         `INSERT INTO jobs (
           token_number, customer_id, job_type, serial_no, model, ram, hard, processor,
           symptoms, receive_date, return_date, charges, has_charger, payment_status, deliver_status, notes, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime("now"), datetime("now"))`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
         [
           tokenNumber,
           finalCustomerId,

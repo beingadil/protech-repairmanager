@@ -83,7 +83,7 @@ export const JobListPage: React.FC = () => {
     e.stopPropagation();
     const newStatus: PaymentStatus = job.payment_status === 'paid' ? 'due' : 'paid';
     try {
-      await execute('UPDATE jobs SET payment_status = ?, updated_at = datetime("now") WHERE id = ?', [
+      await execute(`UPDATE jobs SET payment_status = ?, updated_at = datetime('now') WHERE id = ?`, [
         newStatus,
         job.id
       ]);
@@ -98,7 +98,7 @@ export const JobListPage: React.FC = () => {
     e.stopPropagation();
     const newStatus: DeliverStatus = job.deliver_status === 'delivered' ? 'pending' : 'delivered';
     try {
-      await execute('UPDATE jobs SET deliver_status = ?, updated_at = datetime("now") WHERE id = ?', [
+      await execute(`UPDATE jobs SET deliver_status = ?, updated_at = datetime('now') WHERE id = ?`, [
         newStatus,
         job.id
       ]);
@@ -113,7 +113,7 @@ export const JobListPage: React.FC = () => {
     e.stopPropagation();
     if (confirm(`Are you sure you want to soft-delete repair record ${job.token_number}?`)) {
       try {
-        await execute('UPDATE jobs SET deleted_at = datetime("now") WHERE id = ?', [job.id]);
+        await execute(`UPDATE jobs SET deleted_at = datetime('now') WHERE id = ?`, [job.id]);
         toast.success(`Job ${job.token_number} deleted.`);
         fetchJobs();
       } catch {
