@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { AppSettings } from '../types/settings';
 import { query, execute } from '../lib/db';
+import { formatTokenNumber } from '../lib/token';
 
 interface SettingsState {
   settings: AppSettings;
@@ -94,7 +95,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   getNextTokenNumber: async () => {
     const state = get();
     const currentCounter = parseInt(state.settings.token_counter || '1000', 10);
-    const tokenStr = `TK-${currentCounter.toString().padStart(4, '0')}`;
+    const tokenStr = formatTokenNumber(currentCounter);
     
     // Increment counter for next job
     const nextCounter = (currentCounter + 1).toString();

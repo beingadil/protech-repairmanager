@@ -3,16 +3,18 @@ Version: 1.1
 Last Updated: 2026-08-05
 
 ## PROJECT IDENTITY
-App Name: ProData Repair Manager
+App Name: ProTech Services Repair Manager
 Client: Hameed Shamas (single admin, no multi-user)
-Platform: Web & Desktop App — React 18/19 + TypeScript + SQLite (local persistence via sql.js)
+Platform: Desktop (Electron, primary) + Web (dev/preview) — React 19 + TypeScript
+Database: better-sqlite3 in the Electron main process (real .db in userData, WAL); sql.js + IndexedDB for browser dev
 UI Library: Tailwind CSS + Lucide React + custom responsive components
 State: Zustand (global settings/UI)
 Language: English only
 Theme: Both dark + light (dark is default)
 Print: Thermal 58mm, Thermal 80mm, A4 Invoice — all with QR code
-Notifications: WhatsApp deeplink + optional Twilio SMS
-Extras: Backup/Restore, QR codes on job cards, Analytics dashboard
+Notifications: WhatsApp deeplink only (Twilio removed — was never implemented)
+Extras: Backup/Restore (validated), daily auto-backup, QR codes on job cards, Analytics dashboard
+Fully offline: no runtime network requests, no API keys
 
 ## CURRENT BUILD STATUS
 PHASE COMPLETED: [X] Phase 0 - Project Scaffold
@@ -41,7 +43,18 @@ WHAT WAS DONE IN LAST SESSION:
   - Analytics & Settings: Gross earnings reports, common repair issue breakdown, shop identity settings, and thermal printer paper configuration.
 
 KNOWN ISSUES / BLOCKERS:
-- None. Build compiles cleanly with zero errors.
+- None. Build, typecheck (with real React types), 32 vitest tests, and packaged-app smoke test all pass.
+
+## PRODUCTION & ELECTRON BUILD (2026-08-08)
+- Electron shell: electron-vite; main process owns better-sqlite3 (WAL, foreign_keys, integrity check on open, daily auto-backup into userData/backups, newest 10 kept). Sandboxed preload exposes a typed bridge; renderer never touches Node APIs.
+- Renderer db.ts is a facade: Electron -> IPC (src/lib/db-electron.ts), browser -> sql.js. All feature code unchanged.
+- Routing switched to createHashRouter (works under file:// in the packaged app).
+- Security: validated restore (SQLite magic header, size cap, integrity_check, required-table schema check, atomic rename), no CDN WASM fallbacks, no localStorage DB mirror, strict CSP in production builds, no window.require hacks.
+- Removed dead cloud deps (@google/genai, express, dotenv) and the never-implemented Twilio settings (was storing plaintext secrets).
+- Installed @types/react/@types/react-dom — the previous 'lint clean' never type-checked React components (everything resolved to any).
+- Fonts self-hosted (scripts/fetch-fonts.mjs -> public/fonts); sql.js lazy-loaded so it is absent from the Electron renderer's critical path.
+- Packaging: electron-builder -> NSIS installer + portable exe in release/. Code signing cert + branded icon are user-owned steps (see README).
+- Tests: vitest (32) covering backup validation, migration runner vs real better-sqlite3, token formatting, WhatsApp messages, date/currency utils.
 
 ## FOLDER STRUCTURE
 prodata-repair-manager/

@@ -1,4 +1,4 @@
-import initSqlJs, { Database } from 'sql.js';
+import type { Database } from 'sql.js';
 import sqlWasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
 import { validateBackupBytes, validateBackupSchema, backupErrorMessage } from './backup-validate';
 import { applyMigrations, type MigrationExecutor } from './migrations';
@@ -146,9 +146,22 @@ if (typeof window !== 'undefined') {
   });
 }
 
-async function initSql(): Promise<ReturnType<typeof initSqlJs>> {
-  // Local WASM only. No CDN fallbacks: this app must work fully offline and
-  // must not load third-party code at runtime (supply-chain risk).
+let sqlJsModule: Promise<{ default: typeof import('sql.js') }> | null = null;
+
+/**
+ * Lazily loads sql.js. Only the browser adapter needs it — the Electron app
+ * talks to better-sqlite3 in the main process, so the WASM and its wrapper
+ * stay out of the Electron renderer's critical path.
+ */
+async function initSql(): Promise<ReturnType<typeof import('sql.js')['default']>> {
+  if (!sqlJsModule) {
+    // Local WASM only. No CDN fallbacks: this app must work fully offline and
+    // must not load third-party code at runtime (supply-chain risk).
+    sqlJsModule = import('sql.js').then((mod) => ({
+      default: mod.default as typeof import('sql.js')
+    }));
+  }
+  const { default: initSqlJs } = await sqlJsModule;
   return initSqlJs({
     locateFile: () => sqlWasmUrl
   });
