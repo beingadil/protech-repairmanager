@@ -1,0 +1,16 @@
+node_modules/
+build/
+dist/
+out/
+release/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+bun.lock
+*.db
+*.db-shm
+*.db-wal
+.freebuff/
+.vite/
