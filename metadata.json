@@ -1,6 +1,8 @@
 {
-  "name": "ProTech Services Repair Manager",
-  "description": "Offline-first PC, Laptop, Industrial Equipment & Repair Shop Management Application with local SQLite persistence",
+  "name": "Remix ProTech Services Repair Manager",
+  "description": "PC, Laptop, Industrial Equipment \u0026 Repair Shop Management Application",
   "requestFramePermissions": [],
-  "majorCapabilities": []
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

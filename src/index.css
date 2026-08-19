@@ -65,50 +65,57 @@
 }
 
 @media print {
-  /* Hide non-printable UI elements */
-  body * {
-    visibility: hidden;
-  }
-
-  #printable-content,
-  #printable-content * {
-    visibility: visible;
-  }
-
-  #printable-content {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100% !important;
-    max-width: 100% !important;
+  /* Hide non-printable screen UI elements */
+  html, body {
+    height: auto !important;
+    min-height: auto !important;
     margin: 0 !important;
-    padding: 16px !important;
+    padding: 0 !important;
     background: #ffffff !important;
     color: #000000 !important;
-    box-shadow: none !important;
-    border: none !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   aside,
   header,
   nav,
+  footer,
   button,
-  .no-print {
+  .no-print,
+  .screen-only,
+  #sidebar,
+  #top-header {
     display: none !important;
   }
 
-  body, html {
+  /* Isolate printable receipt content directly */
+  #printable-content {
+    display: block !important;
+    position: static !important;
+    visibility: visible !important;
+    width: 100% !important;
+    max-width: 190mm !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
     background: #ffffff !important;
     color: #000000 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+    box-shadow: none !important;
+    border: none !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  #printable-content * {
+    visibility: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   @page {
-    size: auto;
-    margin: 8mm;
+    size: portrait;
+    margin: 6mm 8mm;
   }
 }
 

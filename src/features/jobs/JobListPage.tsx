@@ -15,7 +15,8 @@ import {
   Monitor,
   Check,
   Clock,
-  RotateCcw
+  RotateCcw,
+  X
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { query, execute } from '../../lib/db';
@@ -83,7 +84,7 @@ export const JobListPage: React.FC = () => {
     e.stopPropagation();
     const newStatus: PaymentStatus = job.payment_status === 'paid' ? 'due' : 'paid';
     try {
-      await execute(`UPDATE jobs SET payment_status = ?, updated_at = datetime('now') WHERE id = ?`, [
+      await execute('UPDATE jobs SET payment_status = ?, updated_at = datetime("now") WHERE id = ?', [
         newStatus,
         job.id
       ]);
@@ -98,7 +99,7 @@ export const JobListPage: React.FC = () => {
     e.stopPropagation();
     const newStatus: DeliverStatus = job.deliver_status === 'delivered' ? 'pending' : 'delivered';
     try {
-      await execute(`UPDATE jobs SET deliver_status = ?, updated_at = datetime('now') WHERE id = ?`, [
+      await execute('UPDATE jobs SET deliver_status = ?, updated_at = datetime("now") WHERE id = ?', [
         newStatus,
         job.id
       ]);
@@ -113,7 +114,7 @@ export const JobListPage: React.FC = () => {
     e.stopPropagation();
     if (confirm(`Are you sure you want to soft-delete repair record ${job.token_number}?`)) {
       try {
-        await execute(`UPDATE jobs SET deleted_at = datetime('now') WHERE id = ?`, [job.id]);
+        await execute('UPDATE jobs SET deleted_at = datetime("now") WHERE id = ?', [job.id]);
         toast.success(`Job ${job.token_number} deleted.`);
         fetchJobs();
       } catch {
@@ -122,7 +123,7 @@ export const JobListPage: React.FC = () => {
     }
   };
 
-  // Filter jobs client side by search keyword
+  // Filter jobs client side by instant search keyword (supports typing "a" for single character matching)
   const filteredJobs = jobs.filter((j) => {
     if (!search.trim()) return true;
     const term = search.toLowerCase();
@@ -130,9 +131,15 @@ export const JobListPage: React.FC = () => {
       j.token_number.toLowerCase().includes(term) ||
       (j.customer_name || '').toLowerCase().includes(term) ||
       (j.customer_mobile || '').includes(term) ||
+      (j.customer_address || '').toLowerCase().includes(term) ||
       (j.model || '').toLowerCase().includes(term) ||
       (j.serial_no || '').toLowerCase().includes(term) ||
-      (j.symptoms || '').toLowerCase().includes(term)
+      (j.processor || '').toLowerCase().includes(term) ||
+      (j.ram || '').toLowerCase().includes(term) ||
+      (j.hard || '').toLowerCase().includes(term) ||
+      (j.symptoms || '').toLowerCase().includes(term) ||
+      (j.notes || '').toLowerCase().includes(term) ||
+      j.charges.toString().includes(term)
     );
   });
 
@@ -146,8 +153,12 @@ export const JobListPage: React.FC = () => {
       {/* Header bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight font-heading">Repair Jobs Master List</h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Manage all PC and Laptop repair records with quick filters and status controls</p>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight font-heading">
+            Repair Jobs Master List
+          </h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Manage all PC and Laptop repair records with quick filters and status controls
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -177,9 +188,17 @@ export const JobListPage: React.FC = () => {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search token (TK-1001), customer, phone, serial..."
-              className="input-field pl-9"
+              placeholder="Search token (PTS-001), customer, phone, specs, symptoms..."
+              className="input-field pl-9 pr-8"
             />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
 
           {/* Payment Filter */}
@@ -220,6 +239,26 @@ export const JobListPage: React.FC = () => {
               <option value="pc">Type: Desktop PC Only</option>
             </select>
           </div>
+        </div>
+
+        {/* Counter summary */}
+        <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800">
+          <span>
+            Showing <strong className="text-slate-800 dark:text-slate-200">{filteredJobs.length}</strong> of {jobs.length} total jobs
+          </span>
+          {(paymentFilter !== 'all' || deliverFilter !== 'all' || typeFilter !== 'all' || search) && (
+            <button
+              onClick={() => {
+                setPaymentFilter('all');
+                setDeliverFilter('all');
+                setTypeFilter('all');
+                setSearch('');
+              }}
+              className="text-blue-600 dark:text-blue-400 hover:underline font-semibold"
+            >
+              Reset Filters
+            </button>
+          )}
         </div>
       </div>
 
@@ -267,6 +306,13 @@ export const JobListPage: React.FC = () => {
                       {/* Token */}
                       <td className="py-3.5 px-4">
                         <TokenDisplay token={job.token_number} size="sm" />
+                        {job.reference_token && (
+                          <div className="mt-1">
+                            <span className="inline-block px-1.5 py-0.2 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded text-[10px] font-mono font-bold" title="Linked reference job">
+                              Ref: {job.reference_token}
+                            </span>
+                          </div>
+                        )}
                       </td>
 
                       {/* Customer info */}

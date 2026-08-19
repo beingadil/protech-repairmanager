@@ -1,128 +1,68 @@
-# ProTech Services — Repair Management System
+# ProTech Services Repair Manager
 
-Offline-first desktop application for PC, laptop, and industrial equipment repair
-shops. Single-admin, local SQLite database, no cloud services, no API keys.
+Offline-first PC, Laptop, Industrial Equipment & Repair Shop Management application.
+Runs as a desktop app (Electron + Vite + React) with local SQLite persistence
+(sql.js) — no internet or server required for day-to-day work.
 
-- **Desktop (primary):** Electron + `better-sqlite3` — the database is a real
-  `.db` file in the OS user-data directory, opened in WAL mode by the main
-  process and accessed from the sandboxed renderer over a typed IPC bridge.
-- **Browser (dev/preview):** same UI over `sql.js` + IndexedDB, so the app also
-  runs as a plain web page.
+## Features
 
-## Requirements
+- **Job management** — intake, edit, detail, filterable master list, auto token generation (PTS-xxx)
+- **Payments & accounts** — double-entry financial ledger, payment status tracking
+- **Inventory** — parts & spare tracking with stock thresholds and transactions
+- **Customers** — searchable directory with repair history and spend
+- **Dashboard & analytics** — KPIs, revenue trends, repair status distribution
+- **Printing & export** — thermal 58mm / 80mm job cards and A4 invoices with QR codes; PDF export
+- **WhatsApp notifications** — ready-for-collection, repair update and payment reminder templates
+- **Backup & restore** — one-click SQLite `.db` export/import plus optional Google Drive sync
+- **Auto-update** — checks GitHub Releases and silently installs new versions
+- **Dark/light themes**, command palette (`Ctrl/Cmd+K`), full offline support
 
-- Node.js 20+ (tested on Node 26) and npm.
-- Windows is the supported packaging target (NSIS installer + portable exe).
+## Tech stack
 
-## Development
+- Electron + electron-vite, React 19, TypeScript, Tailwind CSS v4
+- SQLite via `sql.js` persisted to IndexedDB (local, offline)
+- Zustand state, React Router, Recharts, sonner, jsPDF / html2canvas
+
+## Getting started
 
 ```bash
 npm install
-npm run dev            # web (Vite, browser, sql.js adapter)
-npm run dev:electron   # desktop (electron-vite dev, HMR, better-sqlite3)
+npm run dev          # run in the browser (port 3000)
+npm run dev:electron # run inside Electron with HMR
 ```
 
-## Production build & packaging
+## Building
 
 ```bash
-npm run lint           # tsc --noEmit
-npm test               # vitest unit/integration tests
-npm run build          # web build -> dist/
-npm run build:electron # desktop build -> out/ (main, preload, renderer)
-npm run dist:win       # NSIS installer + portable exe -> release/
-npm run dist:win:portable  # portable exe only
+npm run lint              # TypeScript type check
+npm run test              # vitest unit tests
+npm run build             # web bundle -> dist/
+npm run build:electron    # electron shell -> out/
+npm run dist:win          # NSIS installer + portable exe -> release/
+npm run dist:win:portable # portable exe only
 ```
 
-Artifacts land in `release/`:
+## Auto-updates
 
-- `ProTech Services Repair Manager Setup 1.0.0.exe` — installable (NSIS, allows
-  choosing the install directory, desktop shortcut).
-- `ProTech Services Repair Manager-portable-1.0.0.exe` — portable, no install.
+The desktop app uses [electron-updater](https://www.electron.build/auto-update)
+with the **GitHub Releases** provider (`owner: beingadil`, `repo: prottech-repairmanager`).
 
-The packaged app can be smoke-tested headlessly:
-
-```bash
-SMOKE_TEST=1 SMOKE_TEST_OUT=smoke-result.log "release/win-unpacked/ProTech Services Repair Manager.exe"
-# then check smoke-result.log for did-finish-load + db-ipc-check ok
-```
-
-## Where the data lives
-
-| Mode | Storage |
-|------|---------|
-| Electron | `%APPDATA%\protech-repair-manager\prodata.db` (WAL mode) |
-| Electron backups | `%APPDATA%\protech-repair-manager\backups\` — one automatic copy per day, newest 10 kept |
-| Browser | IndexedDB (`prodata_repair_db_store`) |
-
-Export/restore from the **Backup & Restore** page uses a validated restore: the
-file must be a real SQLite database, pass `PRAGMA integrity_check`, and contain
-the required tables before it replaces the live database. Restores are atomic
-(temp file + rename).
-
-## Offline behavior
-
-- Zero runtime network requests in the production build (fonts, WASM, and all
-  assets are self-hosted; CSP is `default-src 'self'`).
-- WhatsApp notifications are `wa.me` deep links — user-initiated; they open the
-  browser/WhatsApp only when the user clicks and only when online.
-- Print (thermal 58/80mm, A4 invoice, QR codes, PDF export) is fully local.
-
-## Security notes
-
-- Renderer is sandboxed (`contextIsolation`, `sandbox`, `nodeIntegration: off`).
-- The database lives in the main process; the renderer only reaches it through
-  the preload bridge with typed IPC handlers that validate payloads.
-- Strict CSP is applied to production builds.
-- Restore validation (above) blocks crafted/corrupt `.db` files.
-- No secrets are stored: the unused Twilio settings were removed; there are no
-  API keys anywhere.
-
-### Before distributing (user-owned steps)
-
-1. **Code signing** — purchase a code-signing certificate (e.g. Sectigo/Comodo
-   EV or OV) and configure it in electron-builder (`win.certificateFile` /
-   `WIN_CSC_LINK`) so Windows SmartScreen stops warning users. Add
-   `"postinstall": "electron-builder install-app-deps"` to `package.json` on the
-   build machine.
-2. **Branded icon** — done: `build/icon.png` (512×512, generated from
-   `build/icon.svg` via `npx electron scripts/generate-icon.mjs`) is wired into
-   `electron-builder.yml` and embedded in the installer/exe.
-3. **Auto-update feed** — auto-updates are implemented (electron-updater). To
-   ship an update: bump `version` in `package.json`, run
-   `npm run dist` (or `npx electron-builder --win nsis`), then upload the new
-   installer `.exe` + `.blockmap` + `latest.yml` from `release/` to your feed
-   server. The app checks on launch (silent) and via *Settings → Check for
-   updates*, downloads in the background, and installs on quit.
-   `UPDATE_FEED_URL` overrides the feed at runtime for staging/testing.
-4. **Encryption at rest (optional)** — currently the `.db` file is plaintext on
-   disk, matching the single-admin local use case. If backups will travel or
-   laptops can be lost, move to SQLCipher or OS disk encryption (BitLocker).
-
-### Troubleshooting
-
-- **App fails to launch on a PC with aggressive antivirus / restricted
-  sandbox** (crash at startup, blank window, or "GPU process isn't usable"):
-  launch with `--no-sandbox`. This disables Chromium's OS-level sandbox
-  (contextIsolation and nodeIntegration:false still protect the renderer).
-  Normal Windows machines do not need this flag.
+- Each tagged release (`vX.Y.Z` push) is built and published by
+  `.github/workflows/release.yml`, which uploads the installer, the portable exe
+  and `latest.yml` to a GitHub Release.
+- Installed clients check for updates a few seconds after launch, download in
+  the background and offer **Restart to Update**. The update pill appears in the
+  app top bar.
+- For a self-hosted feed, override at runtime without rebuilding:
+  `UPDATE_FEED_URL=https://your.server/path electron .`
 
 ## Project layout
 
 ```
-app/main/      Electron main: window, IPC handlers, better-sqlite3 wrapper
-app/preload/   Sandboxed contextBridge (typed, minimal surface)
-src/lib/       db facade (web/electron switch), migrations runner, validation,
-               utils, whatsapp, export
-src/db/migrations/  versioned .sql migrations (schema_version tracked)
-src/features/  Dashboard, Jobs, Customers, Print, Backup, Settings, ...
-scripts/       fetch-fonts.mjs (self-host Google Fonts)
+app/            Electron main + preload (window, IPC, updater, sql.js WASM bridge)
+src/            React renderer (features, components, stores, db layer)
+scripts/        helpers (icon generation, font self-hosting)
+build/          app icons used by electron-builder
+public/fonts/   self-hosted fonts (no Google dependency at runtime)
+.github/        CI + release workflows
 ```
-
-## Tests
-
-```bash
-npm test
-```
-
-Covers backup validation, the migration runner (against real better-sqlite3),
-token formatting, WhatsApp message generation, and date/currency utilities.

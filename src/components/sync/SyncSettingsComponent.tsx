@@ -90,16 +90,6 @@ export const SyncSettingsComponent: React.FC = () => {
     toast.success('Path preset applied');
   };
 
-  const handleChooseFolder = async () => {
-    if (!window.prodata?.drive) return;
-    const chosen = await window.prodata.drive.chooseFolder();
-    if (chosen) {
-      setPathInput(chosen);
-      setGoogleDrivePath(chosen);
-      toast.success('Backup folder selected');
-    }
-  };
-
   return (
     <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800/90 rounded-2xl p-5 md:p-6 shadow-xs dark:shadow-xl text-slate-900 dark:text-slate-100 space-y-6 transition-colors duration-150">
       {/* Header */}
@@ -168,17 +158,6 @@ export const SyncSettingsComponent: React.FC = () => {
             <Save className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             <span>{isSaved ? 'Saved!' : 'Save Path'}</span>
           </button>
-
-          {window.prodata?.drive && (
-            <button
-              type="button"
-              onClick={handleChooseFolder}
-              className="px-4 py-2.5 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs font-semibold rounded-xl border border-blue-200 dark:border-blue-800 transition-colors flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
-            >
-              <Folder className="w-3.5 h-3.5" />
-              <span>Browse...</span>
-            </button>
-          )}
         </div>
 
         {/* Quick Path Preset Chips */}

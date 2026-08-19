@@ -12,7 +12,8 @@ import {
   Clock,
   Laptop,
   CheckCircle2,
-  Calendar
+  Calendar,
+  Boxes
 } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from 'recharts';
 import { query } from '../../lib/db';
@@ -35,6 +36,12 @@ export const DashboardPage: React.FC = () => {
   const [recentJobs, setRecentJobs] = useState<Job[]>([]);
   const [overdueJobs, setOverdueJobs] = useState<Job[]>([]);
   const [revenueTrend, setRevenueTrend] = useState<any[]>([]);
+  const [stockSummary, setStockSummary] = useState({
+    total_parts: 0,
+    low_stock: 0,
+    out_of_stock: 0,
+    total_val: 0
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -98,19 +105,75 @@ export const DashboardPage: React.FC = () => {
       setOverdueJobs(overdueRes);
       setRecentJobs(recentRes);
 
-      // Mock or computed revenue trend for past 7 days
-      const mockDays = [];
+      // 4. Fetch Stock Inventory Summary
+      try {
+        const stockRes = await query<{
+          total_parts: number;
+          low_stock: number;
+          out_of_stock: number;
+          total_val: number;
+        }>(`
+          SELECT 
+            COUNT(*) as total_parts,
+            SUM(CASE WHEN quantity > 0 AND quantity <= min_threshold THEN 1 ELSE 0 END) as low_stock,
+            SUM(CASE WHEN quantity = 0 THEN 1 ELSE 0 END) as out_of_stock,
+            SUM(quantity * unit_cost) as total_val
+          FROM inventory_items
+        `);
+
+        if (stockRes.length > 0) {
+          setStockSummary({
+            total_parts: stockRes[0].total_parts || 0,
+            low_stock: stockRes[0].low_stock || 0,
+            out_of_stock: stockRes[0].out_of_stock || 0,
+            total_val: stockRes[0].total_val || 0
+          });
+        }
+      } catch (e) {
+        console.warn('Stock query warning:', e);
+      }
+
+      // Real computed revenue trend for past 7 days from jobs & transactions
+      const realDays = [];
       for (let i = 6; i >= 0; i--) {
         const d = new Date();
         d.setDate(d.getDate() - i);
+        const isoDate = d.toISOString().split('T')[0];
         const dayLabel = d.toLocaleDateString('en-US', { weekday: 'short' });
-        mockDays.push({
-          day: dayLabel,
-          revenue: Math.floor(Math.random() * 8000) + 2000,
-          jobs: Math.floor(Math.random() * 4) + 1
-        });
+
+        try {
+          const dayJobRes = await query<{ day_rev: number; day_jobs: number }>(`
+            SELECT 
+              SUM(CASE WHEN payment_status = 'paid' THEN charges ELSE 0 END) as day_rev,
+              COUNT(*) as day_jobs
+            FROM jobs
+            WHERE receive_date LIKE ? AND deleted_at IS NULL
+          `, [`${isoDate}%`]);
+
+          const finRes = await query<{ fin_rev: number }>(`
+            SELECT SUM(amount) as fin_rev
+            FROM financial_transactions
+            WHERE date LIKE ? AND type = 'credit'
+          `, [`${isoDate}%`]);
+
+          const revFromJobs = (dayJobRes[0]?.day_rev || 0);
+          const revFromFin = (finRes[0]?.fin_rev || 0);
+          const totalDayRev = Math.max(revFromJobs, revFromFin);
+
+          realDays.push({
+            day: dayLabel,
+            revenue: totalDayRev,
+            jobs: dayJobRes[0]?.day_jobs || 0
+          });
+        } catch (err) {
+          realDays.push({
+            day: dayLabel,
+            revenue: 0,
+            jobs: 0
+          });
+        }
       }
-      setRevenueTrend(mockDays);
+      setRevenueTrend(realDays);
 
     } catch (e) {
       console.error('Failed to load dashboard statistics:', e);
@@ -131,7 +194,7 @@ export const DashboardPage: React.FC = () => {
       transition={{ duration: 0.25 }}
       className="space-y-6"
     >
-      {/* Top Banner & Quick Intake Button */}
+      {/* Top Banner */}
       <div className="card-container border-l-4 border-l-blue-600 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
@@ -148,16 +211,15 @@ export const DashboardPage: React.FC = () => {
           </p>
         </div>
         <button
-          onClick={() => navigate('/jobs/new')}
-          className="btn-primary shrink-0"
+          onClick={() => navigate('/jobs')}
+          className="btn-secondary shrink-0"
         >
-          <Plus className="w-4 h-4" />
-          <span>New Repair Intake</span>
+          <span>View Repair Queue →</span>
         </button>
       </div>
 
       {/* KPI Stat Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* Total Systems */}
         <motion.div
           whileHover={{ y: -3 }}
@@ -206,15 +268,44 @@ export const DashboardPage: React.FC = () => {
           className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800/90 rounded-2xl p-5 shadow-xs hover:border-emerald-500 transition-all cursor-pointer group"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Completed / Delivered</span>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Delivered</span>
             <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/50 rounded-xl text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
               <PackageCheck className="w-5 h-5" />
             </div>
           </div>
           <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400 mt-3 font-heading">{stats.delivered_jobs}</p>
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mt-2">
-            <span>Successfully returned</span>
+            <span>Returned</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+          </div>
+        </motion.div>
+
+        {/* Stock Inventory KPI Card */}
+        <motion.div
+          whileHover={{ y: -3 }}
+          transition={{ duration: 0.15 }}
+          onClick={() => navigate('/inventory')}
+          className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800/90 rounded-2xl p-5 shadow-xs hover:border-purple-500 transition-all cursor-pointer group"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Stock Parts</span>
+            <div className="p-2.5 bg-purple-50 dark:bg-purple-950/50 rounded-xl text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
+              <Boxes className="w-5 h-5" />
+            </div>
+          </div>
+          <p className="text-3xl font-black text-purple-600 dark:text-purple-400 mt-3 font-heading">{stockSummary.total_parts}</p>
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mt-2">
+            {stockSummary.low_stock > 0 || stockSummary.out_of_stock > 0 ? (
+              <span className="text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1 text-[11px]">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                {stockSummary.low_stock + stockSummary.out_of_stock} low stock
+              </span>
+            ) : (
+              <span className="text-emerald-600 dark:text-emerald-400 font-bold text-[11px]">
+                Stock Healthy
+              </span>
+            )}
+            <ArrowUpRight className="w-4 h-4 text-purple-500" />
           </div>
         </motion.div>
 
@@ -233,7 +324,7 @@ export const DashboardPage: React.FC = () => {
           </div>
           <p className="text-3xl font-black text-slate-900 dark:text-white mt-3 font-heading">{formatCurrency(stats.revenue_total)}</p>
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mt-2">
-            <span>Paid charges total</span>
+            <span>Paid charges</span>
             <TrendingUp className="w-4 h-4 text-indigo-500" />
           </div>
         </motion.div>

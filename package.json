@@ -1,7 +1,7 @@
 {
   "name": "protech-repair-manager",
   "private": true,
-  "version": "1.0.6",
+  "version": "1.1.0",
   "description": "Offline-first PC, Laptop, Industrial Equipment & Repair Shop Management Application with local SQLite persistence",
   "author": "ProTech Services",
   "license": "UNLICENSED",
@@ -23,7 +23,6 @@
   "dependencies": {
     "@hookform/resolvers": "^5.7.1",
     "@tanstack/react-query": "^5.101.4",
-    "better-sqlite3": "^13.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -47,7 +46,6 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
-    "@electron/rebuild": "^4.0.0",
     "@tailwindcss/vite": "^4.1.14",
     "@types/node": "^22.14.0",
     "@types/react": "^19.2.18",

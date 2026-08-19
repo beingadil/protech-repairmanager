@@ -1,16 +1,19 @@
 import React from 'react';
-import { Search, Menu, Plus, Sun, Moon, Cloud, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Search, Menu, Sun, Moon, Cloud, CheckCircle2, AlertTriangle, LogOut, ShieldCheck } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUIStore } from '../../store/ui';
 import { useSettingsStore } from '../../store/settings';
-import { useSettingsStore as useSyncStore } from '../../store/useSettingsStore';
+import { useSyncSettingsStore } from '../../store/useSettingsStore';
+import { useAuthStore } from '../../store/auth';
 import { useTheme } from '../../hooks/useTheme';
+import { toast } from 'sonner';
 import { UpdateIndicator } from '../update/UpdateIndicator';
 
 export const TopBar: React.FC = () => {
   const { toggleSidebar, setCommandPaletteOpen } = useUIStore();
   const { settings, updateSetting } = useSettingsStore();
-  const { lastSyncTime, syncStatus, syncError } = useSyncStore();
+  const { lastSyncTime, syncStatus, syncError } = useSyncSettingsStore();
+  const { currentUser, logout } = useAuthStore();
   const { isDark, toggleTheme } = useTheme('dark');
   const navigate = useNavigate();
   const location = useLocation();
@@ -21,6 +24,12 @@ export const TopBar: React.FC = () => {
     updateSetting('theme', nextTheme);
   };
 
+  const handleLogout = () => {
+    logout();
+    toast.success('Logged out successfully.');
+    navigate('/login');
+  };
+
   // Page title lookup
   const getPageTitle = (pathname: string) => {
     if (pathname === '/') return 'Dashboard Overview';
@@ -29,6 +38,8 @@ export const TopBar: React.FC = () => {
     if (pathname.includes('/print')) return 'Print Job Card / Invoice';
     if (pathname.startsWith('/jobs/')) return 'Repair Job Details';
     if (pathname.startsWith('/jobs')) return 'Repair Jobs Master List';
+    if (pathname.startsWith('/payments')) return 'Financial Accounts & Payment Ledger';
+    if (pathname.startsWith('/inventory')) return 'Parts & Spare Inventory';
     if (pathname.startsWith('/customers')) return 'Customer Directory';
     if (pathname.startsWith('/analytics')) return 'Analytics & Financial Reports';
     if (pathname.startsWith('/notifications')) return 'Customer Notifications';
@@ -43,14 +54,14 @@ export const TopBar: React.FC = () => {
       <div className="flex items-center gap-4">
         <button
           onClick={toggleSidebar}
-          className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors"
+          className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
           title="Toggle Navigation Sidebar"
         >
           <Menu className="w-5 h-5" />
         </button>
 
         <div>
-          <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
+          <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight font-heading">
             {getPageTitle(location.pathname)}
           </h2>
           <div className="flex items-center gap-2">
@@ -98,18 +109,18 @@ export const TopBar: React.FC = () => {
         </div>
       </div>
 
-      {/* Right: Global Command Search Trigger + Light/Dark Toggle + Quick Add */}
+      {/* Right: Global Command Search Trigger + Light/Dark Toggle + User Profile / Logout */}
       <div className="flex items-center gap-3">
-        {/* Auto-update status pill */}
         <UpdateIndicator />
+
         {/* Cmd+K Search trigger */}
         <button
           onClick={() => setCommandPaletteOpen(true)}
-          className="flex items-center gap-2 px-3 py-1.5 bg-slate-100/90 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-xl text-xs font-medium border border-slate-200 dark:border-slate-700 transition-colors w-44 md:w-60 justify-between cursor-pointer"
+          className="flex items-center gap-2 px-3 py-1.5 bg-slate-100/90 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-xl text-xs font-medium border border-slate-200 dark:border-slate-700 transition-colors w-40 md:w-52 justify-between cursor-pointer"
         >
-          <div className="flex items-center gap-2">
-            <Search className="w-4 h-4 text-slate-400" />
-            <span className="truncate">Search jobs or customers...</span>
+          <div className="flex items-center gap-2 truncate">
+            <Search className="w-4 h-4 text-slate-400 shrink-0" />
+            <span className="truncate">Search jobs...</span>
           </div>
           <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded text-slate-400 font-mono shadow-2xs">
             ⌘K
@@ -125,14 +136,32 @@ export const TopBar: React.FC = () => {
           {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-600" />}
         </button>
 
-        {/* Quick Add Button */}
-        <button
-          onClick={() => navigate('/jobs/new')}
-          className="hidden sm:inline-flex btn-primary"
-        >
-          <Plus className="w-4 h-4" />
-          <span>New Job</span>
-        </button>
+        {/* Logged in User Badge & Logout Button */}
+        <div className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-800">
+          <div className="hidden md:flex items-center gap-2 px-2.5 py-1 bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl">
+            <div className="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs uppercase">
+              {currentUser?.username?.[0] || 'A'}
+            </div>
+            <div className="text-left">
+              <p className="text-xs font-bold text-slate-900 dark:text-white leading-tight flex items-center gap-1">
+                {currentUser?.name || 'Administrator'}
+                <ShieldCheck className="w-3 h-3 text-emerald-500 inline" />
+              </p>
+              <p className="text-[10px] text-blue-600 dark:text-blue-400 font-mono leading-none">
+                {currentUser?.role || 'Superadmin'}
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={handleLogout}
+            className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50 transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
+            title="Log out from terminal session"
+          >
+            <LogOut className="w-4 h-4" />
+            <span className="hidden sm:inline text-xs font-bold">Logout</span>
+          </button>
+        </div>
       </div>
     </header>
   );

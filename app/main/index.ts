@@ -1,7 +1,6 @@
 import { app, BrowserWindow, dialog, session } from 'electron';
 import { join } from 'node:path';
 import { writeFileSync } from 'node:fs';
-import { openDatabase, closeDatabase } from './db';
 import { registerIpcHandlers } from './ipc';
 import { initUpdater, checkForUpdates, canCheckForUpdates, onUpdateEvent } from './updater';
 import { log } from './log';
@@ -60,36 +59,19 @@ function createWindow(): void {
   if (process.env.SMOKE_TEST) {
     smokeLines.push(`smoke-start ${new Date().toISOString()}`);
     smokeFlush();
-    mainWindow.webContents.on('console-message', (event) => {
-      const msg = event.message ?? event;
+    mainWindow.webContents.on('console-message', (event, level, message) => {
+      const msg = typeof message === 'string' && message ? message : event.message ?? String(message ?? level);
       smokeLines.push(`[renderer] ${typeof msg === 'string' ? msg : JSON.stringify(msg)}`);
     });
     mainWindow.webContents.on('did-finish-load', () => {
       smokeLines.push('did-finish-load');
-      smokeFlush();
-      // Exercise the full IPC + better-sqlite3 path.
+      // Exercise the sql.js WASM bridge through the preload.
       mainWindow?.webContents
         .executeJavaScript(
-          `window.prodata.db.query('SELECT COUNT(*) as c FROM settings').then(r => JSON.stringify({settingsRows: r.length, ok: true})).catch(e => JSON.stringify({ok: false, err: String(e)}))`
+          `window.prodata.sqlWasm.get().then(b => JSON.stringify({wasmOk: Array.isArray(b) && b.length > 0, bytes: Array.isArray(b) ? b.length : 0})).catch(e => JSON.stringify({wasmOk: false, err: String(e)}))`
         )
-        .then((res) => smokeLines.push(`db-ipc-check: ${res}`))
-        .catch((e) => smokeLines.push(`db-ipc-check-error: ${String(e)}`));
-    // Exercise the real job-save SQL path (customer + job INSERT) through the
-    // IPC bridge, inside a transaction that is rolled back so the shop's live
-    // database is untouched. Proves the fixed single-quoted literals run on
-    // strict better-sqlite3 end-to-end.
-    mainWindow?.webContents
-      .executeJavaScript(
-        `window.prodata.db.executeRaw('BEGIN')
-          .then(() => window.prodata.db.execute("INSERT INTO customers (name, mobile, address, created_at, updated_at) VALUES (?, ?, ?, datetime('now'), datetime('now'))", ['Smoke Test', '0000', '']))
-          .then(() => window.prodata.db.query('SELECT last_insert_rowid() as id'))
-          .then((r) => window.prodata.db.execute("INSERT INTO jobs (token_number, customer_id, job_type, receive_date, charges, has_charger, payment_status, deliver_status, created_at, updated_at) VALUES (?, ?, 'laptop', datetime('now'), 100, 0, 'due', 'pending', datetime('now'), datetime('now'))", ['TK-SMOKE', r[0].id]))
-          .then(() => window.prodata.db.query("SELECT token_number FROM jobs WHERE token_number = 'TK-SMOKE'"))
-          .then((rows) => window.prodata.db.executeRaw('ROLLBACK').then(() => JSON.stringify({jobSaveOk: rows.length === 1, token: rows[0]?.token_number})))
-          .catch((e) => window.prodata.db.executeRaw('ROLLBACK').then(() => JSON.stringify({jobSaveOk: false, err: String(e)})))`
-      )
-      .then((res) => smokeLines.push(`job-save-check: ${res}`))
-      .catch((e) => smokeLines.push(`job-save-check-error: ${String(e)}`));
+        .then((res) => smokeLines.push(`sql-wasm-check: ${res}`))
+        .catch((e) => smokeLines.push(`sql-wasm-check-error: ${String(e)}`));
     });
     mainWindow.webContents.on('did-fail-load', (_e, code, desc) => {
       smokeLines.push(`did-fail-load code=${code} desc=${desc}`);
@@ -97,7 +79,7 @@ function createWindow(): void {
     mainWindow.webContents.on('render-process-gone', (_e, details) => {
       smokeLines.push(`renderer-gone: ${JSON.stringify(details)}`);
     });
-    const smokeDuration = Number(process.env.SMOKE_DURATION_MS || 12000);
+    const smokeDuration = Number(process.env.SMOKE_DURATION_MS || 15000);
     setTimeout(() => {
       smokeLines.push('SMOKE_TEST_COMPLETE');
       smokeFlush();
@@ -141,17 +123,6 @@ if (!gotLock) {
       });
     });
 
-    try {
-      openDatabase();
-    } catch (err) {
-      dialog.showErrorBox(
-        'Database Error',
-        err instanceof Error ? err.message : 'The local database could not be opened.'
-      );
-      app.quit();
-      return;
-    }
-
     registerIpcHandlers();
     createWindow();
 
@@ -189,9 +160,5 @@ if (!gotLock) {
 
   app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
-  });
-
-  app.on('before-quit', () => {
-    closeDatabase();
   });
 }

@@ -10,11 +10,14 @@ asar: true
 npmRebuild: true
 
 # Auto-update feed (electron-updater reads app-update.yml generated from this).
-# CHANGE ME to your update server. Runtime override: UPDATE_FEED_URL env var
-# (no rebuild needed). Upload release/latest.yml + the installer .exe there.
+# GitHub Releases provider: pushes latest.yml + installers to a release when
+# built with `--publish always` (see .github/workflows/release.yml). Runtime
+# override: UPDATE_FEED_URL env var (no rebuild needed).
 publish:
-  provider: generic
-  url: https://updates.protech.example.com/
+  provider: github
+  owner: beingadil
+  repo: prottech-repairmanager
+  releaseType: release
 
 win:
   target:
@@ -30,8 +33,9 @@ nsis:
   createDesktopShortcut: always
   shortcutName: ProTech Services
   deleteAppDataOnUninstall: false
+  artifactName: ProTechRepairManager-Setup-${version}.exe
 
 portable:
-  artifactName: ${productName}-portable-${version}.exe
+  artifactName: ProTechRepairManager-portable-${version}.exe
 
 # Code signing is a separate, user-owned step (requires a purchased cert).

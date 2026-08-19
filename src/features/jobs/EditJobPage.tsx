@@ -98,7 +98,7 @@ export const EditJobPage: React.FC = () => {
 
     try {
       // Update customer info
-      await execute(`UPDATE customers SET name = ?, mobile = ?, address = ?, updated_at = datetime('now') WHERE id = ?`, [
+      await execute('UPDATE customers SET name = ?, mobile = ?, address = ?, updated_at = datetime("now") WHERE id = ?', [
         customerName,
         customerMobile,
         customerAddress,
@@ -110,7 +110,7 @@ export const EditJobPage: React.FC = () => {
         `UPDATE jobs SET
           job_type = ?, serial_no = ?, model = ?, ram = ?, hard = ?, processor = ?,
           symptoms = ?, receive_date = ?, return_date = ?, charges = ?, has_charger = ?,
-          payment_status = ?, deliver_status = ?, notes = ?, updated_at = datetime('now')
+          payment_status = ?, deliver_status = ?, notes = ?, updated_at = datetime("now")
          WHERE id = ?`,
         [
           jobType,

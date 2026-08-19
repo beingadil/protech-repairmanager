@@ -12,7 +12,10 @@ import {
   Sun,
   Moon,
   Shield,
-  Laptop
+  Laptop,
+  Boxes,
+  Receipt,
+  Wallet
 } from 'lucide-react';
 import { useSettingsStore } from '../../store/settings';
 import { useUIStore } from '../../store/ui';
@@ -25,6 +28,7 @@ export const Sidebar: React.FC = () => {
   const { isSidebarOpen } = useUIStore();
   const { isDark, toggleTheme } = useTheme('dark');
   const [activeJobCount, setActiveJobCount] = useState<number>(0);
+  const [lowStockCount, setLowStockCount] = useState<number>(0);
 
   useEffect(() => {
     query<{ count: number }>(
@@ -32,12 +36,20 @@ export const Sidebar: React.FC = () => {
     ).then((res) => {
       if (res.length > 0) setActiveJobCount(res[0].count);
     });
+
+    query<{ count: number }>(
+      "SELECT COUNT(*) as count FROM inventory_items WHERE quantity <= min_threshold"
+    ).then((res) => {
+      if (res.length > 0) setLowStockCount(res[0].count);
+    }).catch(() => {});
   }, []);
 
   const navItems = [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
     { label: 'Jobs List', icon: Wrench, path: '/jobs', badge: activeJobCount > 0 ? activeJobCount : undefined },
-    { label: 'Customers', icon: Users, path: '/customers' },
+    { label: 'Payments & Ledger', icon: Receipt, path: '/payments' },
+    { label: 'Stock & Parts', icon: Boxes, path: '/inventory', badge: lowStockCount > 0 ? `${lowStockCount} Low` : undefined, badgeColor: 'amber' },
+    { label: 'Customers / Suppliers', icon: Users, path: '/customers' },
     { label: 'Analytics', icon: BarChart2, path: '/analytics' },
     { label: 'Notifications', icon: Bell, path: '/notifications' },
     { label: 'Backup & Restore', icon: DatabaseBackup, path: '/backup' },
@@ -109,7 +121,11 @@ export const Sidebar: React.FC = () => {
                   {isSidebarOpen && <span className="truncate">{item.label}</span>}
                 </div>
                 {isSidebarOpen && item.badge !== undefined && (
-                  <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/30">
+                  <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full border ${
+                    item.badgeColor === 'amber'
+                      ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/30'
+                      : 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-500/30'
+                  }`}>
                     {item.badge}
                   </span>
                 )}

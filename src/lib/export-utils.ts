@@ -1,5 +1,47 @@
 import { Job } from '../types/job';
 import { Customer } from '../types/customer';
+import { InventoryItem } from '../types/inventory';
+import { FinancialTransaction } from '../types/payment';
+
+export function exportFinancialTransactionsToCSV(transactions: FinancialTransaction[]): void {
+  const headers = [
+    'ID',
+    'Date',
+    'Type',
+    'Amount (PKR)',
+    'Category',
+    'Payment Method',
+    'Customer Name',
+    'Supplier Name',
+    'Token Number',
+    'Description',
+    'Notes'
+  ];
+
+  const rows = transactions.map((t) => [
+    t.id,
+    `"${t.date || ''}"`,
+    `"${t.type.toUpperCase()}"`,
+    t.amount || 0,
+    `"${t.category || ''}"`,
+    `"${t.payment_method || ''}"`,
+    `"${t.customer_name || ''}"`,
+    `"${t.supplier_name || ''}"`,
+    `"${t.token_number || ''}"`,
+    `"${(t.description || '').replace(/"/g, '""')}"`,
+    `"${(t.notes || '').replace(/"/g, '""')}"`
+  ]);
+
+  const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', `ProTech_Ledger_Report_${new Date().toISOString().split('T')[0]}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
 
 export function exportJobsToCSV(jobs: Job[]): void {
   const headers = [
@@ -68,3 +110,48 @@ export function exportCustomersToCSV(customers: Customer[]): void {
   link.click();
   document.body.removeChild(link);
 }
+
+export function exportInventoryToCSV(items: InventoryItem[]): void {
+  const headers = [
+    'Part Number',
+    'Item Name',
+    'Category',
+    'Current Stock Qty',
+    'Min Threshold',
+    'Unit Cost (PKR)',
+    'Selling Price (PKR)',
+    'Total Cost Value',
+    'Total Retail Value',
+    'Shelf Location',
+    'Supplier Info',
+    'Notes'
+  ];
+
+  const rows = items.map((i) => [
+    `"${i.part_number || ''}"`,
+    `"${i.name || ''}"`,
+    `"${i.category || ''}"`,
+    i.quantity || 0,
+    i.min_threshold || 0,
+    i.unit_cost || 0,
+    i.selling_price || 0,
+    (i.quantity || 0) * (i.unit_cost || 0),
+    (i.quantity || 0) * (i.selling_price || 0),
+    `"${i.location || ''}"`,
+    `"${i.supplier_info || ''}"`,
+    `"${(i.notes || '').replace(/"/g, '""')}"`
+  ]);
+
+  const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', `ProTech_Stock_Inventory_${new Date().toISOString().split('T')[0]}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+export const exportLedgerToCSV = exportFinancialTransactionsToCSV;
+

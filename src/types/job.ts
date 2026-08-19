@@ -23,6 +23,7 @@ export interface Job {
   payment_status: PaymentStatus;
   deliver_status: DeliverStatus;
   notes: string;
+  reference_token?: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -47,6 +48,7 @@ export interface CreateJobInput {
   payment_status: PaymentStatus;
   deliver_status: DeliverStatus;
   notes?: string;
+  reference_token?: string | null;
 }
 
 export interface JobNotification {

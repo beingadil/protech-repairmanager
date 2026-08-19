@@ -26,21 +26,6 @@ export const BackupPage: React.FC = () => {
   const handleManualBackup = async () => {
     setIsExporting(true);
     try {
-      // Desktop app: native save dialog via the main process.
-      if (window.prodata?.backup) {
-        const res = await window.prodata.backup.save();
-        if (!res.canceled && res.filePath) {
-          const fileName = res.filePath.split(/[\\/]/).pop() || res.filePath;
-          await execute(
-            `INSERT INTO backup_log (file_path, file_name, size_bytes, backup_type, created_at) VALUES (?, ?, ?, 'manual', datetime('now'))`,
-            [res.filePath, fileName, res.sizeBytes ?? 0]
-          );
-          toast.success(`Backup saved: ${res.filePath}`);
-          loadBackupLogs();
-        }
-        return;
-      }
-
       const binary = await exportDatabaseBinary();
       const blob = new Blob([binary.buffer as ArrayBuffer], { type: 'application/x-sqlite3' });
       const url = URL.createObjectURL(blob);
@@ -55,7 +40,7 @@ export const BackupPage: React.FC = () => {
 
       // Log backup
       await execute(
-        `INSERT INTO backup_log (file_path, file_name, size_bytes, backup_type, created_at) VALUES (?, ?, ?, 'manual', datetime('now'))`,
+        'INSERT INTO backup_log (file_path, file_name, size_bytes, backup_type, created_at) VALUES (?, ?, ?, "manual", datetime("now"))',
         [fileName, fileName, binary.byteLength]
       );
 
@@ -66,19 +51,6 @@ export const BackupPage: React.FC = () => {
       toast.error('Failed to export backup file.');
     } finally {
       setIsExporting(false);
-    }
-  };
-
-  const restoreViaDialog = async () => {
-    try {
-      const res = await window.prodata!.backup.restore();
-      if (!res.canceled) {
-        toast.success('Database restored successfully! Reloading...');
-        setTimeout(() => window.location.reload(), 1000);
-      }
-    } catch (err) {
-      console.error('Failed to restore database:', err);
-      toast.error(err instanceof Error ? err.message : 'Restore failed.');
     }
   };
 
@@ -160,22 +132,11 @@ export const BackupPage: React.FC = () => {
             Note: This action will overwrite current in-memory database records with the selected file.
           </p>
 
-          {window.prodata?.backup ? (
-            <button
-              type="button"
-              onClick={restoreViaDialog}
-              className="w-full py-2.5 px-4 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold shadow-md transition-colors flex items-center justify-center gap-2"
-            >
-              <Upload className="w-4 h-4" />
-              <span>Restore from Backup File</span>
-            </button>
-          ) : (
-            <label className="w-full py-2.5 px-4 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer">
-              <Upload className="w-4 h-4" />
-              <span>Select .db Backup File</span>
-              <input type="file" accept=".db,.sqlite" onChange={handleRestoreFile} className="hidden" />
-            </label>
-          )}
+          <label className="w-full py-2.5 px-4 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer">
+            <Upload className="w-4 h-4" />
+            <span>Select .db Backup File</span>
+            <input type="file" accept=".db,.sqlite" onChange={handleRestoreFile} className="hidden" />
+          </label>
         </div>
       </div>
 

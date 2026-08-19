@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { AppSettings } from '../types/settings';
-import { query, execute } from '../lib/db';
-import { formatTokenNumber } from '../lib/token';
+import { query, execute, getNextPTSToken } from '../lib/db';
 
 interface SettingsState {
   settings: AppSettings;
@@ -15,14 +14,29 @@ interface SettingsState {
 
 const DEFAULT_SETTINGS: AppSettings = {
   shop_name: 'ProTech Services',
+  shop_slogan: 'Professional Laptop & Desktop Hardware Repair Center',
   shop_address: 'Jamil Ahmad Computer Market, Munir Chowk, Gujranwala / Flat 1, Sadiq Plaza, Lahore',
   shop_mobile: '0300-0404004',
+  shop_whatsapp: '0300-0404004',
+  shop_email: 'support@protechservices.pk',
   logo_path: '',
   theme: 'dark',
   thermal_size: '80',
   default_charges: '1500',
+  currency_symbol: 'PKR',
+  receipt_header_msg: 'Thank you for choosing ProTech Services for your hardware repairs.',
+  receipt_footer_msg: 'Warranty claims must be accompanied by this receipt. No returns after 30 days.',
+  receipt_terms: '1. Repaired equipment must be collected within 30 days of completion.\n2. We are not responsible for any software or data loss during hardware repair.\n3. Warranty void if warranty seal or sticker is broken or tampered with.',
+  show_qr_on_receipt: '1',
+  show_logo_on_receipt: '1',
+  default_warranty_days: '30',
+  default_turnaround_days: '2',
+  token_prefix: 'PTS',
+  twilio_sid: '',
+  twilio_token: '',
+  twilio_from: '',
   auto_backup: '1',
-  token_counter: '1000'
+  token_counter: '1'
 };
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
@@ -93,14 +107,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   },
 
   getNextTokenNumber: async () => {
-    const state = get();
-    const currentCounter = parseInt(state.settings.token_counter || '1000', 10);
-    const tokenStr = formatTokenNumber(currentCounter);
-    
-    // Increment counter for next job
-    const nextCounter = (currentCounter + 1).toString();
-    await get().updateSetting('token_counter', nextCounter);
-
-    return tokenStr;
+    return await getNextPTSToken();
   }
 }));

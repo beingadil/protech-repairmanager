@@ -76,7 +76,7 @@ export const JobDetailPage: React.FC = () => {
   const handleTogglePayment = async () => {
     if (!job) return;
     const newStatus = job.payment_status === 'paid' ? 'due' : 'paid';
-    await execute(`UPDATE jobs SET payment_status = ?, updated_at = datetime('now') WHERE id = ?`, [
+    await execute('UPDATE jobs SET payment_status = ?, updated_at = datetime("now") WHERE id = ?', [
       newStatus,
       job.id
     ]);
@@ -87,7 +87,7 @@ export const JobDetailPage: React.FC = () => {
   const handleToggleDelivery = async () => {
     if (!job) return;
     const newStatus = job.deliver_status === 'delivered' ? 'pending' : 'delivered';
-    await execute(`UPDATE jobs SET deliver_status = ?, updated_at = datetime('now') WHERE id = ?`, [
+    await execute('UPDATE jobs SET deliver_status = ?, updated_at = datetime("now") WHERE id = ?', [
       newStatus,
       job.id
     ]);
@@ -98,7 +98,7 @@ export const JobDetailPage: React.FC = () => {
   const handleDeleteJob = async () => {
     if (!job) return;
     if (confirm(`Are you sure you want to soft-delete repair record ${job.token_number}?`)) {
-      await execute(`UPDATE jobs SET deleted_at = datetime('now') WHERE id = ?`, [job.id]);
+      await execute('UPDATE jobs SET deleted_at = datetime("now") WHERE id = ?', [job.id]);
       toast.success('Job record deleted.');
       navigate('/jobs');
     }
@@ -120,7 +120,7 @@ export const JobDetailPage: React.FC = () => {
 
     // Log notification
     execute(
-      `INSERT INTO job_notifications (job_id, channel, message, sent_at, status) VALUES (?, 'whatsapp', ?, datetime('now'), 'sent')`,
+      'INSERT INTO job_notifications (job_id, channel, message, sent_at, status) VALUES (?, "whatsapp", ?, datetime("now"), "sent")',
       [job.id, message]
     );
   };
@@ -136,7 +136,9 @@ export const JobDetailPage: React.FC = () => {
   const overdue = isOverdue(job.return_date, job.deliver_status);
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <>
+      {/* Interactive Screen UI */}
+      <div className="space-y-6 max-w-5xl mx-auto screen-only">
       {/* Header bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
         <div className="flex items-center gap-3">
@@ -152,6 +154,12 @@ export const JobDetailPage: React.FC = () => {
                 {job.model || `${job.job_type.toUpperCase()} System`}
               </h1>
               <TokenDisplay token={job.token_number} size="md" />
+              {job.reference_token && (
+                <span className="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5" title="Reference Token from previous job">
+                  <span className="text-[10px] uppercase text-indigo-500 font-sans">Ref:</span>
+                  {job.reference_token}
+                </span>
+              )}
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
               Customer: <span className="font-semibold text-slate-700 dark:text-slate-300">{job.customer_name}</span> • Phone: {job.customer_mobile}
@@ -375,96 +383,111 @@ export const JobDetailPage: React.FC = () => {
           </div>
         </div>
       </div>
+      </div>
 
-      {/* Hidden Printable Receipt for Customer (Triggered via window.print()) */}
-      <div id="printable-content" className="hidden print:block font-sans text-slate-900 bg-white p-6 max-w-2xl mx-auto border border-slate-300">
+      {/* Hidden Printable Receipt for Customer (Triggered via window.print() / Print Receipt button) */}
+      <div
+        id="printable-content"
+        className="hidden print:block font-sans text-slate-900 bg-white p-4 max-w-[720px] mx-auto border border-slate-400 rounded-lg text-xs leading-tight"
+      >
         {/* Receipt Header */}
-        <div className="text-center border-b-2 border-slate-900 pb-4 mb-4">
-          <h2 className="text-xl font-bold uppercase tracking-tight text-slate-900">
-            {settings.shop_name || 'ProData Repair Center'}
-          </h2>
-          <p className="text-xs text-slate-600 font-medium">{settings.shop_address}</p>
-          <p className="text-xs font-bold text-slate-800">Contact / Helpline: {settings.shop_mobile}</p>
-          <div className="mt-2 inline-block px-3 py-1 bg-slate-100 border border-slate-300 rounded text-[11px] font-black uppercase tracking-wider">
-            Official Customer Repair Receipt & Intake Slip
+        <div className="flex items-start justify-between border-b-2 border-slate-900 pb-2 mb-2">
+          <div>
+            <h2 className="text-base font-black uppercase tracking-tight text-slate-900">
+              {settings.shop_name || 'ProTech Services'}
+            </h2>
+            <p className="text-[10px] text-slate-600 leading-tight">{settings.shop_address}</p>
+            <p className="text-[10px] font-bold text-slate-800">Phone: {settings.shop_mobile}</p>
+          </div>
+          <div className="text-right">
+            <div className="inline-block px-2.5 py-0.5 bg-slate-900 text-white rounded text-[10px] font-black uppercase tracking-wider">
+              Repair Intake Slip
+            </div>
+            <p className="text-[9px] text-slate-500 mt-0.5">Date: {formatDate(job.receive_date)}</p>
           </div>
         </div>
 
         {/* Token Number & Date Banner */}
-        <div className="flex items-center justify-between bg-slate-100 p-3 rounded-lg border border-slate-300 mb-4">
-          <div>
-            <span className="text-[10px] uppercase font-bold text-slate-500 block">Repair Token #</span>
-            <span className="text-2xl font-black font-mono text-slate-900 tracking-wider">{job.token_number}</span>
+        <div className="flex items-center justify-between bg-slate-100 px-3 py-1.5 rounded border border-slate-300 mb-2">
+          <div className="flex items-center gap-3">
+            <span className="text-[9px] uppercase font-bold text-slate-500">Repair Token:</span>
+            <span className="text-lg font-black font-mono text-slate-900">{job.token_number}</span>
+            {job.reference_token && (
+              <span className="text-[10px] font-bold font-mono px-1.5 py-0.5 bg-indigo-100 text-indigo-800 rounded">
+                Ref: {job.reference_token}
+              </span>
+            )}
           </div>
-          <div className="text-right">
-            <span className="text-[10px] uppercase font-bold text-slate-500 block">Date Issued</span>
-            <span className="text-xs font-bold text-slate-900">{formatDate(job.receive_date)}</span>
+          <div className="text-right text-[10px]">
+            <span className="text-slate-500">Expected Delivery: </span>
+            <span className="font-bold text-slate-900">{formatDate(job.return_date)}</span>
           </div>
         </div>
 
-        {/* Customer & Device Information */}
-        <div className="grid grid-cols-2 gap-4 mb-4 text-xs">
-          <div className="border border-slate-200 p-3 rounded-lg bg-slate-50">
-            <h4 className="font-bold text-slate-900 border-b border-slate-300 pb-1 mb-2 uppercase text-[10px] tracking-wider">Customer Details</h4>
+        {/* Customer & Device Information (Compact 2-Column) */}
+        <div className="grid grid-cols-2 gap-2 mb-2 text-[11px]">
+          <div className="border border-slate-300 p-2 rounded bg-slate-50/50">
+            <p className="font-bold text-[9px] uppercase text-slate-500 border-b border-slate-200 pb-0.5 mb-1">Customer Info</p>
             <p className="font-bold text-slate-900">{job.customer_name}</p>
-            <p className="text-slate-700">Phone: <span className="font-mono">{job.customer_mobile}</span></p>
-            {job.customer_address && <p className="text-slate-600 text-[11px]">Address: {job.customer_address}</p>}
+            <p className="text-slate-700">Phone: <span className="font-mono font-semibold">{job.customer_mobile}</span></p>
+            {job.customer_address && <p className="text-slate-600 truncate text-[10px]">Address: {job.customer_address}</p>}
           </div>
 
-          <div className="border border-slate-200 p-3 rounded-lg bg-slate-50">
-            <h4 className="font-bold text-slate-900 border-b border-slate-300 pb-1 mb-2 uppercase text-[10px] tracking-wider">Device Specs</h4>
-            <p className="font-bold text-slate-900">{job.job_type.toUpperCase()} - {job.model || 'Standard Model'}</p>
-            <p className="text-slate-700">S/N: <span className="font-mono font-semibold">{job.serial_no || 'N/A'}</span></p>
-            <p className="text-slate-600 text-[11px]">Specs: {job.processor || '-'} | {job.ram || '-'} | {job.hard || '-'}</p>
-            <p className="text-slate-700 font-semibold mt-1">Charger Included: {job.has_charger ? 'YES ✓' : 'NO ✗'}</p>
+          <div className="border border-slate-300 p-2 rounded bg-slate-50/50">
+            <p className="font-bold text-[9px] uppercase text-slate-500 border-b border-slate-200 pb-0.5 mb-1">Device Details</p>
+            <p className="font-bold text-slate-900">{job.job_type.toUpperCase()} — {job.model || 'Standard Unit'}</p>
+            <p className="text-slate-700">S/N: <span className="font-mono">{job.serial_no || 'N/A'}</span> • Charger: <span className="font-bold">{job.has_charger ? 'YES' : 'NO'}</span></p>
+            <p className="text-slate-600 text-[10px]">
+              {job.processor ? `${job.processor} | ` : ''}{job.ram ? `${job.ram} RAM | ` : ''}{job.hard ? job.hard : ''}
+            </p>
           </div>
         </div>
 
         {/* Symptoms / Reported Issues */}
-        <div className="border border-slate-300 p-3 rounded-lg mb-4 text-xs">
-          <span className="font-bold uppercase text-[10px] text-slate-500 block mb-1">Reported Fault / Symptoms:</span>
-          <p className="font-medium text-slate-900 italic">{job.symptoms || 'General diagnostic inspection & repair service.'}</p>
+        <div className="border border-slate-300 px-2.5 py-1.5 rounded mb-2 text-[11px]">
+          <span className="font-bold uppercase text-[9px] text-slate-500 block">Reported Fault / Symptoms:</span>
+          <p className="font-medium text-slate-900 italic mt-0.5">{job.symptoms || 'General inspection & repair diagnostic service.'}</p>
         </div>
 
         {/* Charges & Payment Details */}
-        <div className="border-t-2 border-b-2 border-slate-900 py-3 mb-4 flex items-center justify-between text-xs">
+        <div className="border-t-2 border-b-2 border-slate-900 py-1.5 mb-2 flex items-center justify-between text-xs">
           <div>
-            <span className="font-bold uppercase text-[10px] text-slate-500 block">Expected Return Date</span>
-            <span className="font-bold text-slate-900">{formatDate(job.return_date)}</span>
+            <span className="text-[9px] uppercase font-bold text-slate-500 block">Payment Status</span>
+            <span className="font-black text-slate-900 uppercase text-[11px]">{job.payment_status}</span>
           </div>
           <div>
-            <span className="font-bold uppercase text-[10px] text-slate-500 block">Status</span>
-            <span className="font-bold text-slate-900 uppercase">PAYMENT: {job.payment_status} | DELIVERY: {job.deliver_status}</span>
+            <span className="text-[9px] uppercase font-bold text-slate-500 block">Delivery Status</span>
+            <span className="font-black text-slate-900 uppercase text-[11px]">{job.deliver_status}</span>
           </div>
           <div className="text-right">
-            <span className="font-bold uppercase text-[10px] text-slate-500 block">Repair Charge Amount</span>
-            <span className="text-lg font-black text-slate-900 font-mono">{formatCurrency(job.charges)}</span>
+            <span className="text-[9px] uppercase font-bold text-slate-500 block">Total Repair Charges</span>
+            <span className="text-base font-black text-slate-900 font-mono">{formatCurrency(job.charges)}</span>
           </div>
         </div>
 
         {/* Terms & QR Footer */}
-        <div className="flex items-center justify-between gap-4 pt-2 text-[10px] text-slate-600">
+        <div className="flex items-center justify-between gap-3 text-[9px] text-slate-600 border-b border-dashed border-slate-300 pb-2 mb-2">
           <div className="flex-1 space-y-0.5">
             <p className="font-bold text-slate-800 uppercase">Terms & Conditions:</p>
-            <p>1. Please present this original receipt when collecting your device.</p>
-            <p>2. We are not liable for unbacked data loss during diagnostics/repair.</p>
-            <p>3. Unclaimed hardware after 30 days of completion may incur storage charges.</p>
+            <p>1. Original receipt is mandatory for collecting repaired equipment.</p>
+            <p>2. Customer is responsible for backup. Shop is not liable for data loss.</p>
+            <p>3. Equipment uncollected after 30 days is subject to storage charges.</p>
           </div>
           <div className="flex flex-col items-center">
-            <QRCodeDisplay value={job.token_number} size={65} />
-            <span className="font-mono text-[9px] text-slate-500 mt-1">{job.token_number}</span>
+            <QRCodeDisplay value={job.token_number} size={48} />
+            <span className="font-mono text-[8px] text-slate-500 mt-0.5">{job.token_number}</span>
           </div>
         </div>
 
         {/* Signatures */}
-        <div className="grid grid-cols-2 gap-8 mt-6 pt-4 border-t border-dashed border-slate-300 text-[10px] text-slate-500">
+        <div className="grid grid-cols-2 gap-8 text-[9px] text-slate-500 pt-1">
           <div>
-            <div className="h-8 border-b border-slate-400 mb-1"></div>
+            <div className="h-6 border-b border-slate-400 mb-0.5"></div>
             <p className="text-center font-semibold">Customer Signature</p>
           </div>
           <div>
-            <div className="h-8 border-b border-slate-400 mb-1"></div>
-            <p className="text-center font-semibold">Technician / Store Stamp</p>
+            <div className="h-6 border-b border-slate-400 mb-0.5"></div>
+            <p className="text-center font-semibold">Technician / Shop Stamp</p>
           </div>
         </div>
       </div>
@@ -477,7 +500,7 @@ export const JobDetailPage: React.FC = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setShowNotifyModal(false)}
-            className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 screen-only"
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -549,6 +572,6 @@ export const JobDetailPage: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </>
   );
 };

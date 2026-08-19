@@ -16,7 +16,7 @@ export interface SyncSettingsState {
   resetSyncStatus: () => void;
 }
 
-export const useSettingsStore = create<SyncSettingsState>()(
+export const useSyncSettingsStore = create<SyncSettingsState>()(
   persist(
     (set) => ({
       googleDrivePath: 'C:\\Users\\Admin\\Google Drive\\ProDataBackups',
@@ -45,3 +45,6 @@ export const useSettingsStore = create<SyncSettingsState>()(
     }
   )
 );
+
+// Backward-compatible alias
+export const useSettingsStore = useSyncSettingsStore;

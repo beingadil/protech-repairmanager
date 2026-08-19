@@ -1,16 +1,9 @@
 export interface ProdataBridge {
-  db: {
-    query(sql: string, params?: unknown[]): Promise<unknown[]>;
-    execute(sql: string, params?: unknown[]): Promise<void>;
-    executeRaw(sql: string): Promise<void>;
-    export(): Promise<number[]>;
-    restore(bytes: number[]): Promise<void>;
-    reset(): Promise<void>;
-    getInfo(): Promise<{ path: string; sizeBytes: number }>;
+  sqlWasm: {
+    get(): Promise<number[] | null>;
   };
-  backup: {
-    save(): Promise<{ canceled: boolean; filePath?: string; sizeBytes?: number }>;
-    restore(): Promise<{ canceled: boolean; filePath?: string }>;
+  app: {
+    getUserDataPath(): Promise<string>;
   };
   drive: {
     syncToFolder(bytes: number[], folder: string): Promise<{
@@ -20,9 +13,6 @@ export interface ProdataBridge {
       error?: string;
     }>;
     chooseFolder(): Promise<string | null>;
-  };
-  app: {
-    getUserDataPath(): Promise<string>;
   };
   updater: {
     check(manual?: boolean): Promise<{ ok: boolean; error?: string }>;
