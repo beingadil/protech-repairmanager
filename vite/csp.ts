@@ -6,7 +6,10 @@ import type { Plugin } from 'vite';
  */
 export const PRODUCTION_CSP = [
   "default-src 'self'",
-  "script-src 'self'",
+  // 'wasm-unsafe-eval' is required for the bundled sql.js WASM (SQLite) to
+  // compile in the packaged app — Chromium blocks WebAssembly under a strict
+  // script-src without it.
+  "script-src 'self' 'wasm-unsafe-eval'",
   // 'unsafe-inline' styles: html2canvas/jsPDF inject <style> elements at runtime
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",

@@ -45,7 +45,7 @@ npm run dist:win:portable # portable exe only
 ## Auto-updates
 
 The desktop app uses [electron-updater](https://www.electron.build/auto-update)
-with the **GitHub Releases** provider (`owner: beingadil`, `repo: prottech-repairmanager`).
+with the **GitHub Releases** provider (`owner: beingadil`, `repo: protech-repairmanager`).
 
 - Each tagged release (`vX.Y.Z` push) is built and published by
   `.github/workflows/release.yml`, which uploads the installer, the portable exe

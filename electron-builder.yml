@@ -16,7 +16,7 @@ npmRebuild: true
 publish:
   provider: github
   owner: beingadil
-  repo: prottech-repairmanager
+  repo: protech-repairmanager
   releaseType: release
 
 win:

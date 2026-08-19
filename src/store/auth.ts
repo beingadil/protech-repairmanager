@@ -2,14 +2,23 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { AuthState, UserAccount, UserRole } from '../types/auth';
 
-const DEFAULT_SUPERADMIN: UserAccount = {
+const SUPERADMIN: UserAccount = {
   id: 'user-superadmin-initial',
-  username: 'admin',
-  password: 'admin123',
-  name: 'Administrator',
+  username: 'adil',
+  password: 'adil123',
+  name: 'Super Administrator',
   role: 'Superadmin',
-  created_at: new Date().toISOString()
+  created_at: '2026-01-01T00:00:00.000Z'
 };
+
+/** Always guarantees the hardcoded superadmin account exists in the list. */
+function ensureSuperadmin(users: UserAccount[]): UserAccount[] {
+  const stateUsers = users && users.length > 0 ? users : [];
+  if (stateUsers.some((u) => u.username.toLowerCase() === SUPERADMIN.username)) {
+    return stateUsers;
+  }
+  return [SUPERADMIN, ...stateUsers];
+}
 
 interface ExtendedAuthState extends AuthState {
   updateUserPassword: (id: string, newPassword: string) => { success: boolean; error?: string };
@@ -21,17 +30,15 @@ export const useAuthStore = create<ExtendedAuthState>()(
     (set, get) => ({
       currentUser: null,
       isAuthenticated: false,
-      users: [DEFAULT_SUPERADMIN],
+      users: [SUPERADMIN],
 
       login: (username, password) => {
         const cleanUsername = username.trim().toLowerCase();
         const cleanPassword = password.trim();
 
-        // Ensure at least one admin exists if list is empty for any reason
-        let stateUsers = get().users;
-        if (!stateUsers || stateUsers.length === 0) {
-          stateUsers = [DEFAULT_SUPERADMIN];
-        }
+        // Always ensure the hardcoded superadmin (adil / adil123) is present,
+        // even if an older persisted auth store is missing it.
+        const stateUsers = ensureSuperadmin(get().users);
 
         const foundUser = stateUsers.find(
           (u) => u.username.toLowerCase() === cleanUsername
@@ -67,7 +74,7 @@ export const useAuthStore = create<ExtendedAuthState>()(
           return { success: false, error: 'Username, Name, and Password are all required.' };
         }
 
-        const stateUsers = get().users || [DEFAULT_SUPERADMIN];
+        const stateUsers = ensureSuperadmin(get().users);
         const exists = stateUsers.some(
           (u) => u.username.toLowerCase() === cleanUsername
         );
@@ -86,7 +93,7 @@ export const useAuthStore = create<ExtendedAuthState>()(
         };
 
         set((state) => ({
-          users: [...(state.users || [DEFAULT_SUPERADMIN]), newUser]
+          users: [...ensureSuperadmin(state.users), newUser]
         }));
 
         return { success: true };
@@ -98,7 +105,7 @@ export const useAuthStore = create<ExtendedAuthState>()(
           return { success: false, error: 'Password must be at least 4 characters long.' };
         }
 
-        const stateUsers = get().users || [DEFAULT_SUPERADMIN];
+        const stateUsers = ensureSuperadmin(get().users);
         const userIndex = stateUsers.findIndex((u) => u.id === id);
 
         if (userIndex === -1) {
@@ -121,7 +128,7 @@ export const useAuthStore = create<ExtendedAuthState>()(
       },
 
       updateUserProfile: (id, updates) => {
-        const stateUsers = get().users || [DEFAULT_SUPERADMIN];
+        const stateUsers = ensureSuperadmin(get().users);
         const userIndex = stateUsers.findIndex((u) => u.id === id);
 
         if (userIndex === -1) {
@@ -145,7 +152,7 @@ export const useAuthStore = create<ExtendedAuthState>()(
       },
 
       deleteUser: (id) => {
-        const stateUsers = get().users || [DEFAULT_SUPERADMIN];
+        const stateUsers = ensureSuperadmin(get().users);
         const targetUser = stateUsers.find((u) => u.id === id);
 
         if (!targetUser) {

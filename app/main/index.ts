@@ -65,10 +65,18 @@ function createWindow(): void {
     });
     mainWindow.webContents.on('did-finish-load', () => {
       smokeLines.push('did-finish-load');
-      // Exercise the sql.js WASM bridge through the preload.
+      // Exercise the sql.js WASM bridge AND verify Chromium can actually
+      // compile the WASM under the production CSP (needs 'wasm-unsafe-eval').
       mainWindow?.webContents
         .executeJavaScript(
-          `window.prodata.sqlWasm.get().then(b => JSON.stringify({wasmOk: Array.isArray(b) && b.length > 0, bytes: Array.isArray(b) ? b.length : 0})).catch(e => JSON.stringify({wasmOk: false, err: String(e)}))`
+          `window.prodata.sqlWasm.get()
+            .then(b => {
+              if (!Array.isArray(b) || b.length === 0) return JSON.stringify({wasmBridgeOk:false});
+              return WebAssembly.compile(new Uint8Array(b))
+                .then(() => JSON.stringify({wasmBridgeOk:true, compileOk:true, bytes:b.length}))
+                .catch(e => JSON.stringify({wasmBridgeOk:true, compileOk:false, err:String(e), name:e && e.name}));
+            })
+            .catch(e => JSON.stringify({wasmBridgeOk:false, err:String(e)}))`
         )
         .then((res) => smokeLines.push(`sql-wasm-check: ${res}`))
         .catch((e) => smokeLines.push(`sql-wasm-check-error: ${String(e)}`));
