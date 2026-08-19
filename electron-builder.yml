@@ -22,7 +22,6 @@ publish:
 win:
   target:
     - nsis
-    - portable
   # 512x512 PNG is converted to a multi-size .ico by electron-builder.
   # Regenerate with: npx electron scripts/generate-icon.mjs
   icon: build/icon.png
@@ -34,8 +33,5 @@ nsis:
   shortcutName: ProTech Services
   deleteAppDataOnUninstall: false
   artifactName: ProTechRepairManager-Setup-${version}.exe
-
-portable:
-  artifactName: ProTechRepairManager-portable-${version}.exe
 
 # Code signing is a separate, user-owned step (requires a purchased cert).
