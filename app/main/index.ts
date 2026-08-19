@@ -152,13 +152,14 @@ if (!gotLock) {
       );
     }
 
-    // Silent background update check shortly after launch.
+    // Silent background update check shortly after launch — fetches the latest
+    // release feed from GitHub and downloads it in the background if found.
     if (!process.env.SMOKE_TEST && canCheckForUpdates()) {
       setTimeout(() => {
         checkForUpdates(false).catch((err) => {
           log.warn(`[updater] background check failed: ${err}`);
         });
-      }, 10_000);
+      }, 4_000);
     }
 
     app.on('activate', () => {

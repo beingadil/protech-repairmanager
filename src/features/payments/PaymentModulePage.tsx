@@ -61,6 +61,50 @@ const METHOD_OPTIONS: { value: PaymentMethod; label: string }[] = [
   { value: 'other', label: 'Other / Online' }
 ];
 
+// Resolve the live job behind a reference token (used to link vouchers and to
+// auto-mark the job as paid when a credit payment is received for it).
+async function findJobIdByToken(token: string | null | undefined): Promise<number | null> {
+  const t = (token || '').trim();
+  if (!t) return null;
+  const rows = await query<{ id: number }>(
+    'SELECT id FROM jobs WHERE token_number = ? AND deleted_at IS NULL LIMIT 1',
+    [t]
+  );
+  return rows.length > 0 ? rows[0].id : null;
+}
+
+async function findCustomerIdByName(name: string): Promise<number | null> {
+  const n = (name || '').trim();
+  if (!n) return null;
+  const rows = await query<{ id: number }>('SELECT id FROM customers WHERE name = ? LIMIT 1', [n]);
+  return rows.length > 0 ? rows[0].id : null;
+}
+
+async function markJobPaidByToken(token: string | null | undefined): Promise<void> {
+  const t = (token || '').trim();
+  if (!t) return;
+  await execute(
+    "UPDATE jobs SET payment_status = 'paid', updated_at = datetime('now') WHERE token_number = ? AND deleted_at IS NULL",
+    [t]
+  );
+}
+
+async function revertJobToDueIfUnpaid(token: string | null | undefined, excludeTxId: number): Promise<void> {
+  const t = (token || '').trim();
+  if (!t) return;
+  const remaining = await query<{ c: number }>(
+    "SELECT COUNT(*) as c FROM financial_transactions WHERE type = 'credit' AND token_number = ? AND id != ?",
+    [t, excludeTxId]
+  );
+  const count = remaining.length > 0 ? Number(remaining[0].c) : 0;
+  if (count === 0) {
+    await execute(
+      "UPDATE jobs SET payment_status = 'due', updated_at = datetime('now') WHERE token_number = ? AND deleted_at IS NULL",
+      [t]
+    );
+  }
+}
+
 export const PaymentModulePage: React.FC = () => {
   const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -201,24 +245,31 @@ export const PaymentModulePage: React.FC = () => {
 
     setIsSubmitting(true);
     try {
+      const refJobId = await findJobIdByToken(entryTokenNumber);
       await execute(
         `INSERT INTO financial_transactions (
-          date, type, amount, category, payment_method, customer_name, supplier_name,
-          token_number, description, notes, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime("now"), datetime("now"))`,
+          date, type, amount, category, payment_method, customer_id, customer_name, supplier_name,
+          reference_job_id, token_number, description, notes, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime("now"), datetime("now"))`,
         [
           entryDate,
           entryType,
           amountNum,
           entryCategory,
           entryMethod,
+          entryType === 'credit' ? entryPartyId : null,
           entryType === 'credit' ? entryPartyName : null,
           entryType === 'debit' ? entryPartyName : null,
+          refJobId,
           entryTokenNumber || null,
           entryDescription,
           entryNotes || null
         ]
       );
+
+      if (entryType === 'credit') {
+        await markJobPaidByToken(entryTokenNumber);
+      }
 
       toast.success(
         `${entryType === 'credit' ? 'Credit (+)' : 'Debit (-)'} voucher of ${formatCurrency(amountNum)} recorded!`
@@ -257,24 +308,32 @@ export const PaymentModulePage: React.FC = () => {
     setIsSubmitting(true);
     try {
       for (const row of validRows) {
+        const partyId = await findCustomerIdByName(row.party_name);
+        const refJobId = await findJobIdByToken(row.reference_token);
         await execute(
           `INSERT INTO financial_transactions (
-            date, type, amount, category, payment_method, customer_name, supplier_name,
-            token_number, description, notes, created_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime("now"), datetime("now"))`,
+            date, type, amount, category, payment_method, customer_id, customer_name, supplier_name,
+            reference_job_id, token_number, description, notes, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime("now"), datetime("now"))`,
           [
             row.date || new Date().toISOString().split('T')[0],
             row.type,
             row.amount,
             row.category,
             row.payment_method,
+            row.type === 'credit' ? partyId : null,
             row.type === 'credit' ? row.party_name : null,
             row.type === 'debit' ? row.party_name : null,
+            refJobId,
             row.reference_token || null,
             row.description,
             row.notes || null
           ]
         );
+
+        if (row.type === 'credit') {
+          await markJobPaidByToken(row.reference_token);
+        }
       }
 
       toast.success(`Successfully posted ${validRows.length} batch ledger entries!`);
@@ -342,6 +401,9 @@ export const PaymentModulePage: React.FC = () => {
     if (confirm(`Delete ledger entry #${tx.id} (${tx.description} - ${formatCurrency(tx.amount)})?`)) {
       try {
         await execute('DELETE FROM financial_transactions WHERE id = ?', [tx.id]);
+        if (tx.type === 'credit') {
+          await revertJobToDueIfUnpaid(tx.token_number, tx.id);
+        }
         toast.success(`Transaction #${tx.id} deleted.`);
         loadTransactions();
       } catch (err) {

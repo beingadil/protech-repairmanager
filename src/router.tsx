@@ -15,6 +15,7 @@ import { BackupPage } from './features/backup/BackupPage';
 import { SettingsPage } from './features/settings/SettingsPage';
 import { InventoryPage } from './features/inventory/InventoryPage';
 import { PaymentModulePage } from './features/payments/PaymentModulePage';
+import { GeneralLedgerPage } from './features/ledger/GeneralLedgerPage';
 
 // Hash-based router: works identically under Vite dev (http) and Electron
 // (file://) — a file URL cannot be matched by a path-based router.
@@ -38,6 +39,7 @@ export const router = createHashRouter([
       { path: 'jobs/:id/edit', element: <EditJobPage /> },
       { path: 'jobs/:id/print', element: <PrintPreviewPage /> },
       { path: 'payments', element: <PaymentModulePage /> },
+      { path: 'ledger', element: <GeneralLedgerPage /> },
       { path: 'inventory', element: <InventoryPage /> },
       { path: 'customers', element: <CustomersPage /> },
       { path: 'analytics', element: <AnalyticsPage /> },

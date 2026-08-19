@@ -16,7 +16,16 @@ export const UpdateIndicator: React.FC = () => {
     check(false).catch(() => {});
   }, [check]);
 
-  if (state === 'idle' || state === 'uptodate' || state === 'checking') return null;
+  if (state === 'idle' || state === 'uptodate') return null;
+
+  if (state === 'checking') {
+    return (
+      <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px] font-bold bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/30">
+        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+        <span>Checking for updates…</span>
+      </span>
+    );
+  }
 
   if (state === 'error') {
     return (

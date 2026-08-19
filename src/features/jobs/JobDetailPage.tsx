@@ -73,17 +73,6 @@ export const JobDetailPage: React.FC = () => {
     }
   };
 
-  const handleTogglePayment = async () => {
-    if (!job) return;
-    const newStatus = job.payment_status === 'paid' ? 'due' : 'paid';
-    await execute('UPDATE jobs SET payment_status = ?, updated_at = datetime("now") WHERE id = ?', [
-      newStatus,
-      job.id
-    ]);
-    toast.success(`Payment status updated to ${newStatus.toUpperCase()}`);
-    loadJob(job.id);
-  };
-
   const handleToggleDelivery = async () => {
     if (!job) return;
     const newStatus = job.deliver_status === 'delivered' ? 'pending' : 'delivered';
@@ -228,9 +217,9 @@ export const JobDetailPage: React.FC = () => {
             <div className="flex items-center gap-4">
               <div>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Payment Status</span>
-                <button onClick={handleTogglePayment} title="Click to toggle Paid/Due">
+                <span title="Payment is recorded in the Payments module and updates automatically">
                   <StatusBadge type="payment" status={job.payment_status} size="lg" />
-                </button>
+                </span>
               </div>
 
               <div className="h-8 w-px bg-slate-200 dark:bg-slate-800"></div>

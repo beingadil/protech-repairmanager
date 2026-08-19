@@ -15,7 +15,8 @@ import {
   Laptop,
   Boxes,
   Receipt,
-  Wallet
+  Wallet,
+  BookOpen
 } from 'lucide-react';
 import { useSettingsStore } from '../../store/settings';
 import { useUIStore } from '../../store/ui';
@@ -48,6 +49,7 @@ export const Sidebar: React.FC = () => {
     { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
     { label: 'Jobs List', icon: Wrench, path: '/jobs', badge: activeJobCount > 0 ? activeJobCount : undefined },
     { label: 'Payments & Ledger', icon: Receipt, path: '/payments' },
+    { label: 'General Ledger', icon: BookOpen, path: '/ledger' },
     { label: 'Stock & Parts', icon: Boxes, path: '/inventory', badge: lowStockCount > 0 ? `${lowStockCount} Low` : undefined, badgeColor: 'amber' },
     { label: 'Customers / Suppliers', icon: Users, path: '/customers' },
     { label: 'Analytics', icon: BarChart2, path: '/analytics' },

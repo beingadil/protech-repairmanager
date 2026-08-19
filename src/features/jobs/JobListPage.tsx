@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { query, execute } from '../../lib/db';
-import { Job, PaymentStatus, DeliverStatus, JobType } from '../../types/job';
+import { Job, DeliverStatus, JobType } from '../../types/job';
 import { formatCurrency, formatDate, isOverdue } from '../../lib/utils';
 import { StatusBadge } from '../../components/shared/StatusBadge';
 import { TokenDisplay } from '../../components/shared/TokenDisplay';
@@ -80,21 +80,6 @@ export const JobListPage: React.FC = () => {
   };
 
   // Quick Inline Status Toggles
-  const togglePaymentStatus = async (job: Job, e: React.MouseEvent) => {
-    e.stopPropagation();
-    const newStatus: PaymentStatus = job.payment_status === 'paid' ? 'due' : 'paid';
-    try {
-      await execute('UPDATE jobs SET payment_status = ?, updated_at = datetime("now") WHERE id = ?', [
-        newStatus,
-        job.id
-      ]);
-      toast.success(`Job ${job.token_number} payment set to ${newStatus.toUpperCase()}`);
-      fetchJobs();
-    } catch {
-      toast.error('Failed to update payment status.');
-    }
-  };
-
   const toggleDeliverStatus = async (job: Job, e: React.MouseEvent) => {
     e.stopPropagation();
     const newStatus: DeliverStatus = job.deliver_status === 'delivered' ? 'pending' : 'delivered';
@@ -353,15 +338,11 @@ export const JobListPage: React.FC = () => {
                         {formatCurrency(job.charges)}
                       </td>
 
-                      {/* Payment Status with quick click toggle */}
+                      {/* Payment Status (managed from the Payments module) */}
                       <td className="py-3.5 px-4">
-                        <button
-                          onClick={(e) => togglePaymentStatus(job, e)}
-                          title="Click to toggle Paid/Due"
-                          className="hover:scale-105 transition-transform cursor-pointer"
-                        >
+                        <span title="Payment status is set automatically when a payment is received in the Payments module">
                           <StatusBadge type="payment" status={job.payment_status} size="sm" />
-                        </button>
+                        </span>
                       </td>
 
                       {/* Delivery Status with quick click toggle */}
