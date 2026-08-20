@@ -133,13 +133,13 @@ export const TopBar: React.FC = () => {
           className="p-2 rounded-xl bg-slate-100/90 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors border border-slate-200 dark:border-slate-700 cursor-pointer shadow-2xs"
           title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
         >
-          {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-600" />}
+          {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-600 dark:text-slate-300" />}
         </button>
 
         {/* Logged in User Badge & Logout Button */}
         <div className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-800">
           <div className="hidden md:flex items-center gap-2 px-2.5 py-1 bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl">
-            <div className="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs uppercase">
+            <div className="w-6 h-6 rounded-lg bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 flex items-center justify-center font-bold text-xs uppercase">
               {currentUser?.username?.[0] || 'A'}
             </div>
             <div className="text-left">
@@ -147,7 +147,7 @@ export const TopBar: React.FC = () => {
                 {currentUser?.name || 'Administrator'}
                 <ShieldCheck className="w-3 h-3 text-emerald-500 inline" />
               </p>
-              <p className="text-[10px] text-blue-600 dark:text-blue-400 font-mono leading-none">
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 font-mono leading-none">
                 {currentUser?.role || 'Superadmin'}
               </p>
             </div>

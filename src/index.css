@@ -2,6 +2,12 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+@theme {
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-heading: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
 @layer base {
   :root {
     color-scheme: light dark;
@@ -61,6 +67,11 @@
   /* ProTech Card Containers - uniform 12px radius */
   .card-container {
     @apply bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800/90 rounded-xl p-5 shadow-sm dark:shadow-md transition-colors duration-150;
+  }
+
+  /* Muted uppercase field label - professional typography standard */
+  .muted-label {
+    @apply text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500;
   }
 }
 

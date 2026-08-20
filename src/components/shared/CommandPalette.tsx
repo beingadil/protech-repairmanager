@@ -120,7 +120,7 @@ export const CommandPalette: React.FC = () => {
                       <div className="flex items-center gap-3">
                         <TokenDisplay token={job.token_number} size="sm" />
                         <div>
-                          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
                             {job.model || `${job.job_type.toUpperCase()} Device`}
                           </p>
                           <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5">
@@ -136,7 +136,7 @@ export const CommandPalette: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <StatusBadge type="payment" status={job.payment_status} size="sm" />
                         <StatusBadge type="deliver" status={job.deliver_status} size="sm" />
-                        <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-blue-500 transition-colors ml-1" />
+                        <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors ml-1" />
                       </div>
                     </motion.button>
                   ))}
