@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
@@ -182,10 +182,13 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
-  const paymentChartData = [
-    { name: 'Paid / Delivered', value: stats.delivered_jobs, color: '#10B981' },
-    { name: 'Pending / Active', value: stats.active_jobs, color: '#F59E0B' }
-  ];
+  const paymentChartData = useMemo(
+    () => [
+      { name: 'Paid / Delivered', value: stats.delivered_jobs, color: '#10B981' },
+      { name: 'Pending / Active', value: stats.active_jobs, color: '#F59E0B' }
+    ],
+    [stats.delivered_jobs, stats.active_jobs]
+  );
 
   return (
     <motion.div

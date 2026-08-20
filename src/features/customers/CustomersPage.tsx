@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Search,
@@ -195,24 +195,26 @@ export const CustomersPage: React.FC = () => {
   };
 
   // Filtering
-  const filtered = customers.filter((c) => {
-    // Tab filter
-    if (typeTab === 'customer' && c.party_type === 'supplier') return false;
-    if (typeTab === 'supplier' && c.party_type !== 'supplier') return false;
+  const filtered = useMemo(() => {
+    return customers.filter((c) => {
+      // Tab filter
+      if (typeTab === 'customer' && c.party_type === 'supplier') return false;
+      if (typeTab === 'supplier' && c.party_type !== 'supplier') return false;
 
-    // Instant search match
-    if (!search.trim()) return true;
-    const term = search.toLowerCase();
-    return (
-      c.name.toLowerCase().includes(term) ||
-      (c.mobile || '').includes(term) ||
-      (c.address || '').toLowerCase().includes(term) ||
-      (c.party_type || '').toLowerCase().includes(term)
-    );
-  });
+      // Instant search match
+      if (!search.trim()) return true;
+      const term = search.toLowerCase();
+      return (
+        c.name.toLowerCase().includes(term) ||
+        (c.mobile || '').includes(term) ||
+        (c.address || '').toLowerCase().includes(term) ||
+        (c.party_type || '').toLowerCase().includes(term)
+      );
+    });
+  }, [customers, typeTab, search]);
 
-  const customerCount = customers.filter((c) => c.party_type !== 'supplier').length;
-  const supplierCount = customers.filter((c) => c.party_type === 'supplier').length;
+  const customerCount = useMemo(() => customers.filter((c) => c.party_type !== 'supplier').length, [customers]);
+  const supplierCount = useMemo(() => customers.filter((c) => c.party_type === 'supplier').length, [customers]);
 
   return (
     <motion.div
@@ -326,12 +328,8 @@ export const CustomersPage: React.FC = () => {
             const balanceDue = (c.total_billed || 0) - (c.total_spent || 0);
 
             return (
-              <motion.div
+              <div
                 key={c.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.15 }}
-                whileHover={{ y: -2 }}
                 onClick={() => handleOpenPartyHistory(c)}
                 className={`bg-white dark:bg-slate-900 border rounded-2xl p-5 shadow-xs space-y-3 cursor-pointer transition-all hover:shadow-md ${
                   isSupplier
@@ -417,7 +415,7 @@ export const CustomersPage: React.FC = () => {
                   <span>Click to view full laptop & payment history</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </div>
-              </motion.div>
+              </div>
             );
           })
         )}

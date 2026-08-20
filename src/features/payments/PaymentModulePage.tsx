@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   TrendingUp,
@@ -414,46 +414,58 @@ export const PaymentModulePage: React.FC = () => {
   };
 
   // Filtered transactions
-  const filteredTransactions = transactions.filter((tx) => {
-    // Type filter
-    if (typeFilter !== 'all' && tx.type !== typeFilter) return false;
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter((tx) => {
+      // Type filter
+      if (typeFilter !== 'all' && tx.type !== typeFilter) return false;
 
-    // Category filter
-    if (categoryFilter !== 'all' && tx.category !== categoryFilter) return false;
+      // Category filter
+      if (categoryFilter !== 'all' && tx.category !== categoryFilter) return false;
 
-    // Date range filter
-    if (dateRangeFilter !== 'all') {
-      const txDate = new Date(tx.date);
-      const now = new Date();
-      if (dateRangeFilter === 'today') {
-        const todayStr = now.toISOString().split('T')[0];
-        if (tx.date !== todayStr) return false;
-      } else if (dateRangeFilter === 'week') {
-        const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000);
-        if (txDate < sevenDaysAgo) return false;
-      } else if (dateRangeFilter === 'month') {
-        const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000);
-        if (txDate < thirtyDaysAgo) return false;
+      // Date range filter
+      if (dateRangeFilter !== 'all') {
+        const txDate = new Date(tx.date);
+        const now = new Date();
+        if (dateRangeFilter === 'today') {
+          const todayStr = now.toISOString().split('T')[0];
+          if (tx.date !== todayStr) return false;
+        } else if (dateRangeFilter === 'week') {
+          const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000);
+          if (txDate < sevenDaysAgo) return false;
+        } else if (dateRangeFilter === 'month') {
+          const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000);
+          if (txDate < thirtyDaysAgo) return false;
+        }
       }
-    }
 
-    // Keyword search (single letter instant match like typing "a")
-    if (search.trim()) {
-      const term = search.toLowerCase();
-      const match =
-        tx.description.toLowerCase().includes(term) ||
-        (tx.customer_name || '').toLowerCase().includes(term) ||
-        (tx.supplier_name || '').toLowerCase().includes(term) ||
-        (tx.token_number || '').toLowerCase().includes(term) ||
-        (tx.category || '').toLowerCase().includes(term) ||
-        (tx.payment_method || '').toLowerCase().includes(term) ||
-        (tx.notes || '').toLowerCase().includes(term) ||
-        tx.amount.toString().includes(term);
-      if (!match) return false;
-    }
+      // Keyword search (single letter instant match like typing "a")
+      if (search.trim()) {
+        const term = search.toLowerCase();
+        const match =
+          tx.description.toLowerCase().includes(term) ||
+          (tx.customer_name || '').toLowerCase().includes(term) ||
+          (tx.supplier_name || '').toLowerCase().includes(term) ||
+          (tx.token_number || '').toLowerCase().includes(term) ||
+          (tx.category || '').toLowerCase().includes(term) ||
+          (tx.payment_method || '').toLowerCase().includes(term) ||
+          (tx.notes || '').toLowerCase().includes(term) ||
+          tx.amount.toString().includes(term);
+        if (!match) return false;
+      }
 
-    return true;
-  });
+      return true;
+    });
+  }, [transactions, typeFilter, categoryFilter, dateRangeFilter, search]);
+
+  const multiCreditTotal = useMemo(
+    () => multiRows.filter((r) => r.type === 'credit').reduce((acc, r) => acc + (r.amount || 0), 0),
+    [multiRows]
+  );
+
+  const multiDebitTotal = useMemo(
+    () => multiRows.filter((r) => r.type === 'debit').reduce((acc, r) => acc + (r.amount || 0), 0),
+    [multiRows]
+  );
 
   return (
     <motion.div
@@ -704,11 +716,8 @@ export const PaymentModulePage: React.FC = () => {
                 filteredTransactions.map((tx) => {
                   const isCredit = tx.type === 'credit';
                   return (
-                    <motion.tr
+                    <tr
                       key={tx.id}
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.15 }}
                       className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors"
                     >
                       {/* Date */}
@@ -795,7 +804,7 @@ export const PaymentModulePage: React.FC = () => {
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </td>
-                    </motion.tr>
+                    </tr>
                   );
                 })
               )}
@@ -1259,17 +1268,13 @@ export const PaymentModulePage: React.FC = () => {
                     <span>
                       Total Credit:{' '}
                       <strong className="text-emerald-600">
-                        {formatCurrency(
-                          multiRows.filter((r) => r.type === 'credit').reduce((acc, r) => acc + (r.amount || 0), 0)
-                        )}
+                        {formatCurrency(multiCreditTotal)}
                       </strong>
                     </span>
                     <span>
                       Total Debit:{' '}
                       <strong className="text-rose-600">
-                        {formatCurrency(
-                          multiRows.filter((r) => r.type === 'debit').reduce((acc, r) => acc + (r.amount || 0), 0)
-                        )}
+                        {formatCurrency(multiDebitTotal)}
                       </strong>
                     </span>
                   </div>

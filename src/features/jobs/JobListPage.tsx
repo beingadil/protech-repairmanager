@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
@@ -109,7 +109,7 @@ export const JobListPage: React.FC = () => {
   };
 
   // Filter jobs client side by instant search keyword (supports typing "a" for single character matching)
-  const filteredJobs = jobs.filter((j) => {
+  const filteredJobs = useMemo(() => jobs.filter((j) => {
     if (!search.trim()) return true;
     const term = search.toLowerCase();
     return (
@@ -126,7 +126,7 @@ export const JobListPage: React.FC = () => {
       (j.notes || '').toLowerCase().includes(term) ||
       j.charges.toString().includes(term)
     );
-  });
+  }), [jobs, search]);
 
   return (
     <motion.div
@@ -280,11 +280,8 @@ export const JobListPage: React.FC = () => {
                 filteredJobs.map((job) => {
                   const overdue = isOverdue(job.return_date, job.deliver_status);
                   return (
-                    <motion.tr
+                    <tr
                       key={job.id}
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.15 }}
                       onClick={() => navigate(`/jobs/${job.id}`)}
                       className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors cursor-pointer group"
                     >
@@ -402,7 +399,7 @@ export const JobListPage: React.FC = () => {
                           </button>
                         </div>
                       </td>
-                    </motion.tr>
+                    </tr>
                   );
                 })
               )}

@@ -299,6 +299,19 @@ const MIGRATIONS = [
   CREATE INDEX IF NOT EXISTS idx_fin_type ON financial_transactions(type);
   CREATE INDEX IF NOT EXISTS idx_fin_category ON financial_transactions(category);
   CREATE INDEX IF NOT EXISTS idx_fin_token ON financial_transactions(token_number);
+  `,
+  `
+  -- Index party-ledger lookups (party history drawer, ledger, payments by name)
+  CREATE INDEX IF NOT EXISTS idx_fin_customer_name ON financial_transactions(customer_name);
+  CREATE INDEX IF NOT EXISTS idx_fin_supplier_name ON financial_transactions(supplier_name);
+  CREATE INDEX IF NOT EXISTS idx_fin_reference_job ON financial_transactions(reference_job_id);
+  `,
+  `
+  -- Performance indexes for common module queries
+  CREATE INDEX IF NOT EXISTS idx_jobs_filtered ON jobs(deleted_at, payment_status, deliver_status);
+  CREATE INDEX IF NOT EXISTS idx_jobs_due_sort ON jobs(deleted_at, deliver_status, return_date);
+  CREATE INDEX IF NOT EXISTS idx_fin_token_type ON financial_transactions(token_number, type);
+  CREATE INDEX IF NOT EXISTS idx_trans_created_at ON inventory_transactions(created_at);
   `
 ];
 
@@ -431,11 +444,29 @@ export async function resetDatabaseToProduction(): Promise<void> {
   }
 
   // Save fresh empty state
-  saveDbToStorage();
+  flushDbToStorage();
 }
 
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
+
+// Debounced persistence: a burst of writes coalesces into a single export so the
+// heavy synchronous db.export() + base64/localStorage mirror never blocks the UI
+// thread mid-interaction (~35ms per write at 3MB DB without this).
 export function saveDbToStorage() {
   if (!dbInstance) return;
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    saveTimer = null;
+    flushDbToStorage();
+  }, 400);
+}
+
+export function flushDbToStorage() {
+  if (!dbInstance) return;
+  if (saveTimer) {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+  }
   try {
     const data = dbInstance.export();
     saveToIndexedDB(data);
@@ -443,6 +474,11 @@ export function saveDbToStorage() {
   } catch (e) {
     console.warn('Failed to persist DB to storage:', e);
   }
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', flushDbToStorage);
+  window.addEventListener('pagehide', flushDbToStorage);
 }
 
 export async function query<T = any>(sql: string, params: any[] = []): Promise<T[]> {
@@ -516,7 +552,7 @@ export async function restoreDatabaseBinary(uint8Array: Uint8Array): Promise<voi
     });
   }
   dbInstance = new SQL.Database(uint8Array);
-  saveDbToStorage();
+  flushDbToStorage();
 }
 
 function cleanDemoSeededData(db: Database) {

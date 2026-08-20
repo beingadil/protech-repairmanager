@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Package,
@@ -108,52 +108,63 @@ export const InventoryPage: React.FC = () => {
   }, []);
 
   // Compute Stats
-  const stats: InventoryStats = items.reduce(
-    (acc, item) => {
-      acc.total_items += 1;
-      acc.total_quantity += item.quantity;
-      if (item.quantity === 0) {
-        acc.out_of_stock_count += 1;
-      } else if (item.quantity <= item.min_threshold) {
-        acc.low_stock_count += 1;
-      }
-      acc.total_cost_value += item.quantity * item.unit_cost;
-      acc.total_retail_value += item.quantity * item.selling_price;
-      return acc;
-    },
-    {
-      total_items: 0,
-      total_quantity: 0,
-      low_stock_count: 0,
-      out_of_stock_count: 0,
-      total_cost_value: 0,
-      total_retail_value: 0
-    }
+  const stats: InventoryStats = useMemo(
+    () =>
+      items.reduce(
+        (acc, item) => {
+          acc.total_items += 1;
+          acc.total_quantity += item.quantity;
+          if (item.quantity === 0) {
+            acc.out_of_stock_count += 1;
+          } else if (item.quantity <= item.min_threshold) {
+            acc.low_stock_count += 1;
+          }
+          acc.total_cost_value += item.quantity * item.unit_cost;
+          acc.total_retail_value += item.quantity * item.selling_price;
+          return acc;
+        },
+        {
+          total_items: 0,
+          total_quantity: 0,
+          low_stock_count: 0,
+          out_of_stock_count: 0,
+          total_cost_value: 0,
+          total_retail_value: 0
+        }
+      ),
+    [items]
   );
 
-  const lowStockItems = items.filter((i) => i.quantity <= i.min_threshold);
+  const lowStockItems = useMemo(
+    () => items.filter((i) => i.quantity <= i.min_threshold),
+    [items]
+  );
 
   // Filtered Items
-  const filteredItems = items.filter((item) => {
-    const matchesSearch =
-      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.part_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (item.supplier_info && item.supplier_info.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredItems = useMemo(
+    () =>
+      items.filter((item) => {
+        const matchesSearch =
+          item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.part_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (item.supplier_info && item.supplier_info.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    const matchesCategory = selectedCategory === 'ALL' || item.category === selectedCategory;
+        const matchesCategory = selectedCategory === 'ALL' || item.category === selectedCategory;
 
-    let matchesStock = true;
-    if (stockStatusFilter === 'LOW_STOCK') {
-      matchesStock = item.quantity > 0 && item.quantity <= item.min_threshold;
-    } else if (stockStatusFilter === 'OUT_OF_STOCK') {
-      matchesStock = item.quantity === 0;
-    } else if (stockStatusFilter === 'IN_STOCK') {
-      matchesStock = item.quantity > item.min_threshold;
-    }
+        let matchesStock = true;
+        if (stockStatusFilter === 'LOW_STOCK') {
+          matchesStock = item.quantity > 0 && item.quantity <= item.min_threshold;
+        } else if (stockStatusFilter === 'OUT_OF_STOCK') {
+          matchesStock = item.quantity === 0;
+        } else if (stockStatusFilter === 'IN_STOCK') {
+          matchesStock = item.quantity > item.min_threshold;
+        }
 
-    return matchesSearch && matchesCategory && matchesStock;
-  });
+        return matchesSearch && matchesCategory && matchesStock;
+      }),
+    [items, searchTerm, selectedCategory, stockStatusFilter]
+  );
 
   // Modal Handlers
   const handleOpenAdd = () => {

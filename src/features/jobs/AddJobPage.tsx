@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -343,6 +343,11 @@ export const AddJobPage: React.FC = () => {
   const updateBulkRow = (id: string, field: keyof BulkLaptopRow, value: any) => {
     setBulkRows(bulkRows.map((r) => (r.id === id ? { ...r, [field]: value } : r)));
   };
+
+  const bulkTotalCharges = useMemo(
+    () => bulkRows.reduce((acc, r) => acc + (Number(r.charges) || 0), 0),
+    [bulkRows]
+  );
 
   return (
     <motion.div
@@ -998,7 +1003,7 @@ export const AddJobPage: React.FC = () => {
               <span>
                 Total Est. Charges:{' '}
                 <strong className="text-emerald-600 dark:text-emerald-400 font-bold">
-                  {formatCurrency(bulkRows.reduce((acc, r) => acc + (Number(r.charges) || 0), 0))}
+                  {formatCurrency(bulkTotalCharges)}
                 </strong>
               </span>
             </div>

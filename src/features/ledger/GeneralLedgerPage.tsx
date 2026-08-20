@@ -361,10 +361,8 @@ export const GeneralLedgerPage: React.FC = () => {
                   const isSelected = selectedParty?.name === p.name;
                   const balance = p.credit - p.debit;
                   return (
-                    <motion.tr
+                    <tr
                       key={p.name}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
                       onClick={() => selectParty(p)}
                       className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors cursor-pointer ${
                         isSelected ? 'bg-slate-50/70 dark:bg-slate-800/30' : ''
@@ -405,7 +403,7 @@ export const GeneralLedgerPage: React.FC = () => {
                         {formatCurrency(balance)}
                       </td>
                       <td className="py-3 px-4 text-center text-xs text-slate-500 dark:text-slate-400">{p.count}</td>
-                    </motion.tr>
+                    </tr>
                   );
                 })
               )}
@@ -448,10 +446,8 @@ export const GeneralLedgerPage: React.FC = () => {
                   selectedLedger.map(({ tx, running }) => {
                     const isCredit = tx.type === 'credit';
                     return (
-                      <motion.tr
+                      <tr
                         key={tx.id}
-                        initial={{ opacity: 0, y: 4 }}
-                        animate={{ opacity: 1, y: 0 }}
                         className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors"
                       >
                         <td className="py-3 px-4 text-xs font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
@@ -499,7 +495,7 @@ export const GeneralLedgerPage: React.FC = () => {
                         >
                           {formatCurrency(running)}
                         </td>
-                      </motion.tr>
+                      </tr>
                     );
                   })
                 )}
