@@ -105,12 +105,12 @@ export const CommandPalette: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-1">
-                  {results.map((job, idx) => (
+                  {results.map((job) => (
                     <motion.button
                       key={job.id}
                       initial={{ opacity: 0, x: -6 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.15, delay: idx * 0.03 }}
+                      transition={{ duration: 0.15 }}
                       onClick={() => {
                         setCommandPaletteOpen(false);
                         navigate(`/jobs/${job.id}`);

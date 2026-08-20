@@ -277,14 +277,14 @@ export const JobListPage: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                filteredJobs.map((job, idx) => {
+                filteredJobs.map((job) => {
                   const overdue = isOverdue(job.return_date, job.deliver_status);
                   return (
                     <motion.tr
                       key={job.id}
                       initial={{ opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.2, delay: Math.min(idx * 0.03, 0.3) }}
+                      transition={{ duration: 0.15 }}
                       onClick={() => navigate(`/jobs/${job.id}`)}
                       className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors cursor-pointer group"
                     >

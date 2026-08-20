@@ -701,14 +701,14 @@ export const PaymentModulePage: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                filteredTransactions.map((tx, idx) => {
+                filteredTransactions.map((tx) => {
                   const isCredit = tx.type === 'credit';
                   return (
                     <motion.tr
                       key={tx.id}
                       initial={{ opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.2, delay: Math.min(idx * 0.02, 0.3) }}
+                      transition={{ duration: 0.15 }}
                       className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors"
                     >
                       {/* Date */}

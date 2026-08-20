@@ -319,7 +319,7 @@ export const CustomersPage: React.FC = () => {
             No customer or supplier records found matching search.
           </div>
         ) : (
-          filtered.map((c, idx) => {
+          filtered.map((c) => {
             const isSupplier = c.party_type === 'supplier';
             const pendingCount = c.pending_jobs || 0;
             const totalCount = c.total_jobs || 0;
@@ -330,7 +330,7 @@ export const CustomersPage: React.FC = () => {
                 key={c.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2, delay: Math.min(idx * 0.03, 0.3) }}
+                transition={{ duration: 0.15 }}
                 whileHover={{ y: -2 }}
                 onClick={() => handleOpenPartyHistory(c)}
                 className={`bg-white dark:bg-slate-900 border rounded-2xl p-5 shadow-xs space-y-3 cursor-pointer transition-all hover:shadow-md ${
