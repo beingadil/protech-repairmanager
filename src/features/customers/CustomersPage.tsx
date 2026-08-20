@@ -365,7 +365,7 @@ export const CustomersPage: React.FC = () => {
                     className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                       isSupplier
                         ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                        : 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
                     }`}
                   >
                     {isSupplier ? 'Supplier' : 'Customer'}
@@ -413,7 +413,7 @@ export const CustomersPage: React.FC = () => {
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between text-xs text-blue-600 dark:text-blue-400 font-semibold group-hover:underline pt-1">
+                <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300 font-semibold group-hover:underline pt-1">
                   <span>Click to view full laptop & payment history</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </div>
@@ -529,7 +529,7 @@ export const CustomersPage: React.FC = () => {
                       onClick={() => setHistoryTab('laptops')}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                         historyTab === 'laptops'
-                          ? 'bg-blue-600 text-white shadow-xs'
+                          ? 'bg-slate-600 text-white shadow-xs'
                           : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'
                       }`}
                     >
@@ -541,7 +541,7 @@ export const CustomersPage: React.FC = () => {
                       onClick={() => setHistoryTab('ledger')}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                         historyTab === 'ledger'
-                          ? 'bg-blue-600 text-white shadow-xs'
+                          ? 'bg-slate-600 text-white shadow-xs'
                           : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'
                       }`}
                     >
@@ -580,7 +580,7 @@ export const CustomersPage: React.FC = () => {
                           <div
                             key={job.id}
                             onClick={() => navigate(`/jobs/${job.id}`)}
-                            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs hover:border-blue-500 transition-colors cursor-pointer space-y-2"
+                            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs hover:border-slate-400 dark:hover:border-slate-500 transition-colors cursor-pointer space-y-2"
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">

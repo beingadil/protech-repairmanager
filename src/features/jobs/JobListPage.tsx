@@ -239,7 +239,7 @@ export const JobListPage: React.FC = () => {
                 setTypeFilter('all');
                 setSearch('');
               }}
-              className="text-blue-600 dark:text-blue-400 hover:underline font-semibold"
+              className="text-slate-600 dark:text-slate-300 hover:underline font-semibold"
             >
               Reset Filters
             </button>
@@ -293,7 +293,7 @@ export const JobListPage: React.FC = () => {
                         <TokenDisplay token={job.token_number} size="sm" />
                         {job.reference_token && (
                           <div className="mt-1">
-                            <span className="inline-block px-1.5 py-0.2 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded text-[10px] font-mono font-bold" title="Linked reference job">
+                            <span className="inline-block px-1.5 py-0.2 bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 rounded text-[10px] font-mono font-bold" title="Linked reference job">
                               Ref: {job.reference_token}
                             </span>
                           </div>
@@ -302,7 +302,7 @@ export const JobListPage: React.FC = () => {
 
                       {/* Customer info */}
                       <td className="py-3.5 px-4">
-                        <p className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                        <p className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
                           {job.customer_name}
                         </p>
                         <p className="text-xs text-slate-500 dark:text-slate-400">{job.customer_mobile}</p>
@@ -312,9 +312,9 @@ export const JobListPage: React.FC = () => {
                       <td className="py-3.5 px-4 max-w-xs">
                         <div className="flex items-center gap-1.5 font-medium text-slate-900 dark:text-slate-200">
                           {job.job_type === 'laptop' ? (
-                            <Laptop className="w-4 h-4 text-blue-500 shrink-0" />
+                            <Laptop className="w-4 h-4 text-slate-500 shrink-0" />
                           ) : (
-                            <Monitor className="w-4 h-4 text-indigo-500 shrink-0" />
+                            <Monitor className="w-4 h-4 text-slate-500 shrink-0" />
                           )}
                           <span className="truncate">{job.model || job.job_type.toUpperCase()}</span>
                         </div>

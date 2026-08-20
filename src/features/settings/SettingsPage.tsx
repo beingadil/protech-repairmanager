@@ -294,7 +294,7 @@ export const SettingsPage: React.FC = () => {
         {/* Global Save Button */}
         <button
           onClick={handleSaveAllSettings}
-          className="btn-primary py-2.5 px-5 shadow-lg shadow-blue-600/20 self-start sm:self-auto cursor-pointer"
+          className="btn-primary py-2.5 px-5 shadow-lg shadow-slate-900/20 self-start sm:self-auto cursor-pointer"
         >
           <Save className="w-4 h-4" />
           <span>Save All Settings</span>
@@ -319,7 +319,7 @@ export const SettingsPage: React.FC = () => {
               onClick={() => setActiveTab(tab.id as SettingsTab)}
               className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
                 isActive
-                  ? 'bg-blue-600 text-white shadow-xs'
+                  ? 'bg-slate-600 text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60'
               }`}
             >
@@ -327,7 +327,7 @@ export const SettingsPage: React.FC = () => {
               <span>{tab.label}</span>
               {tab.badge !== undefined && (
                 <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-                  isActive ? 'bg-blue-800 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                  isActive ? 'bg-slate-800 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
                 }`}>
                   {tab.badge}
                 </span>
@@ -342,7 +342,7 @@ export const SettingsPage: React.FC = () => {
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
           <div className="card-container space-y-5">
             <h2 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
-              <Store className="w-4 h-4 text-blue-500" /> Workshop Profile & Branding
+              <Store className="w-4 h-4 text-slate-500" /> Workshop Profile & Branding
             </h2>
 
             {/* Logo Uploader & Preview */}
@@ -377,7 +377,7 @@ export const SettingsPage: React.FC = () => {
                       onClick={() => fileInputRef.current?.click()}
                       className="btn-secondary text-xs"
                     >
-                      <Upload className="w-4 h-4 text-blue-500" />
+                      <Upload className="w-4 h-4 text-slate-500" />
                       <span>Upload Logo Image</span>
                     </button>
 
@@ -599,7 +599,7 @@ export const SettingsPage: React.FC = () => {
                   type="checkbox"
                   checked={showQrOnReceipt}
                   onChange={(e) => setShowQrOnReceipt(e.target.checked)}
-                  className="w-4 h-4 rounded text-blue-600 accent-blue-600"
+                  className="w-4 h-4 rounded text-slate-900 accent-slate-900"
                 />
                 <div>
                   <span className="text-xs font-bold text-slate-900 dark:text-white block">Print Token QR Code</span>
@@ -612,7 +612,7 @@ export const SettingsPage: React.FC = () => {
                   type="checkbox"
                   checked={showLogoOnReceipt}
                   onChange={(e) => setShowLogoOnReceipt(e.target.checked)}
-                  className="w-4 h-4 rounded text-blue-600 accent-blue-600"
+                  className="w-4 h-4 rounded text-slate-900 accent-slate-900"
                 />
                 <div>
                   <span className="text-xs font-bold text-slate-900 dark:text-white block">Print Shop Logo</span>
@@ -692,17 +692,17 @@ export const SettingsPage: React.FC = () => {
       {/* Tab 4: Staff & User Management */}
       {activeTab === 'users' && (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-          <div className="card-container space-y-5 border-l-4 border-l-indigo-600">
+          <div className="card-container space-y-5 border-l-4 border-l-slate-600">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
               <div>
                 <h2 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2 font-heading">
-                  <Users className="w-4 h-4 text-indigo-500" /> Authorized Staff & Terminal User Accounts
+                  <Users className="w-4 h-4 text-slate-500" /> Authorized Staff & Terminal User Accounts
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   Manage workshop technicians, cashiers, and administrators with role-based access
                 </p>
               </div>
-              <span className="px-2.5 py-1 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 rounded-full text-xs font-bold self-start sm:self-auto">
+              <span className="px-2.5 py-1 bg-slate-500/10 text-slate-600 dark:text-slate-300 border border-slate-500/20 rounded-full text-xs font-bold self-start sm:self-auto">
                 {users.length} Active Accounts
               </span>
             </div>
@@ -710,7 +710,7 @@ export const SettingsPage: React.FC = () => {
             {/* Add User Form */}
             <form onSubmit={handleCreateUser} className="p-4 bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4">
               <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase flex items-center gap-1.5">
-                <UserPlus className="w-4 h-4 text-blue-500" /> Register New Staff Account
+                <UserPlus className="w-4 h-4 text-slate-500" /> Register New Staff Account
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -800,7 +800,7 @@ export const SettingsPage: React.FC = () => {
                     return (
                       <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
                         <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-lg bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-black text-[11px] uppercase border border-indigo-500/20">
+                          <div className="w-6 h-6 rounded-lg bg-slate-500/15 text-slate-600 dark:text-slate-300 flex items-center justify-center font-black text-[11px] uppercase border border-slate-500/20">
                             {u.username[0]}
                           </div>
                           <span>{u.name}</span>
@@ -818,7 +818,7 @@ export const SettingsPage: React.FC = () => {
                             u.role === 'Superadmin'
                               ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30'
                               : u.role === 'Admin'
-                              ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30'
+                              ? 'bg-slate-500/10 text-slate-600 dark:text-slate-300 border-slate-500/30'
                               : u.role === 'Technician'
                               ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
                               : 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/30'
@@ -838,7 +838,7 @@ export const SettingsPage: React.FC = () => {
                                 setEditingUserPassword(u);
                                 setChangePasswordInput('');
                               }}
-                              className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors cursor-pointer"
+                              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                               title={`Change password for @${u.username}`}
                             >
                               <KeyRound className="w-3.5 h-3.5" />
@@ -871,7 +871,7 @@ export const SettingsPage: React.FC = () => {
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
           <div className="card-container space-y-5">
             <h2 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
-              <MessageSquare className="w-4 h-4 text-indigo-500" /> WhatsApp & Twilio SMS Gateway
+              <MessageSquare className="w-4 h-4 text-slate-500" /> WhatsApp & Twilio SMS Gateway
             </h2>
 
             <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl space-y-2">
@@ -942,13 +942,13 @@ export const SettingsPage: React.FC = () => {
           {/* Quick Database Backup & Data Export */}
           <div className="card-container space-y-4">
             <h2 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
-              <Database className="w-4 h-4 text-blue-500" /> Database File & Spreadsheet Exports
+              <Database className="w-4 h-4 text-slate-500" /> Database File & Spreadsheet Exports
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="p-4 bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-blue-50 dark:bg-blue-950 text-blue-600 rounded-xl">
+                  <div className="p-2.5 bg-slate-50 dark:bg-slate-800 text-slate-600 rounded-xl">
                     <Download className="w-5 h-5" />
                   </div>
                   <div>
@@ -1036,7 +1036,7 @@ export const SettingsPage: React.FC = () => {
               className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4"
             >
               <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
-                <div className="p-2.5 bg-blue-100 dark:bg-blue-950/60 rounded-xl text-blue-600 dark:text-blue-400">
+                <div className="p-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl text-slate-600 dark:text-slate-300">
                   <KeyRound className="w-5 h-5" />
                 </div>
                 <div>

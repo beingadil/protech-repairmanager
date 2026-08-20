@@ -377,7 +377,7 @@ export const AddJobPage: React.FC = () => {
             onClick={() => setIntakeMode('single')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               intakeMode === 'single'
-                ? 'bg-blue-600 text-white shadow-xs'
+                ? 'bg-slate-900 text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
@@ -389,7 +389,7 @@ export const AddJobPage: React.FC = () => {
             onClick={() => setIntakeMode('bulk_supplier')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               intakeMode === 'bulk_supplier'
-                ? 'bg-indigo-600 text-white shadow-xs'
+                ? 'bg-slate-900 text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
@@ -408,28 +408,28 @@ export const AddJobPage: React.FC = () => {
           className="space-y-6"
         >
           {/* Token Display Bar */}
-          <div className="bg-blue-50/80 dark:bg-blue-950/40 p-4 rounded-2xl border border-blue-200 dark:border-blue-800/60 space-y-3">
+          <div className="bg-slate-50/80 dark:bg-slate-800/40 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <Tag className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                <span className="text-xs font-bold text-blue-900 dark:text-blue-200 uppercase tracking-wide">
+                <Tag className="w-4 h-4 text-slate-600 dark:text-slate-300" />
+                <span className="text-xs font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wide">
                   New Sequential Job Token:
                 </span>
                 <TokenDisplay token={tokenNumber} size="md" />
               </div>
-              <span className="text-[11px] text-blue-600 dark:text-blue-400 font-medium">
+              <span className="text-[11px] text-slate-600 dark:text-slate-300 font-medium">
                 Auto-generated sequence starting with PTS-001
               </span>
             </div>
 
             {/* Reference Token Linking Display */}
             {referenceToken && (
-              <div className="flex items-center justify-between bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border border-blue-300 dark:border-blue-700 text-xs">
+              <div className="flex items-center justify-between bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs">
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-slate-700 dark:text-slate-300">
                     Linked Reference Token:
                   </span>
-                  <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-200 font-mono font-bold rounded">
+                  <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-mono font-bold rounded">
                     {referenceToken}
                   </span>
                   <span className="text-slate-500 dark:text-slate-400 text-[11px]">
@@ -502,7 +502,7 @@ export const AddJobPage: React.FC = () => {
                       onClick={() => setJobType('laptop')}
                       className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
                         jobType === 'laptop'
-                          ? 'bg-blue-600 text-white shadow-xs'
+                          ? 'bg-slate-900 text-white shadow-xs'
                           : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
@@ -513,7 +513,7 @@ export const AddJobPage: React.FC = () => {
                       onClick={() => setJobType('pc')}
                       className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
                         jobType === 'pc'
-                          ? 'bg-blue-600 text-white shadow-xs'
+                          ? 'bg-slate-900 text-white shadow-xs'
                           : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
@@ -736,7 +736,7 @@ export const AddJobPage: React.FC = () => {
                         onClick={() => setDeliverStatus('delivered')}
                         className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
                           deliverStatus === 'delivered'
-                            ? 'bg-blue-600 text-white border-blue-600'
+                            ? 'bg-slate-900 text-white border-slate-900'
                             : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
                         }`}
                       >
@@ -785,7 +785,7 @@ export const AddJobPage: React.FC = () => {
           {/* Supplier Info Box */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800/90 rounded-2xl p-5 shadow-xs space-y-4">
             <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
-              <Building2 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+              <Building2 className="w-5 h-5 text-slate-600 dark:text-slate-300" />
               <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider font-heading">
                 Market Supplier / Dealer Information & Intake History
               </h2>
@@ -837,8 +837,8 @@ export const AddJobPage: React.FC = () => {
               </div>
 
               <div className="flex items-end">
-                <div className="bg-indigo-50 dark:bg-indigo-950/50 p-2.5 rounded-xl border border-indigo-200 dark:border-indigo-800 w-full text-xs text-indigo-700 dark:text-indigo-300 flex items-center gap-2">
-                  <Tag className="w-4 h-4 text-indigo-500 shrink-0" />
+                <div className="bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 w-full text-xs text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                  <Tag className="w-4 h-4 text-slate-500 shrink-0" />
                   <span>Sequential Tokens will start from <strong>{tokenNumber}</strong></span>
                 </div>
               </div>
@@ -874,7 +874,7 @@ export const AddJobPage: React.FC = () => {
                   className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700/80 space-y-3 relative group"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="px-2.5 py-1 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-lg text-xs font-bold">
+                    <span className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-bold">
                       Laptop #{idx + 1}
                     </span>
 
@@ -901,7 +901,7 @@ export const AddJobPage: React.FC = () => {
                         value={row.model}
                         onChange={(e) => updateBulkRow(row.id, 'model', e.target.value)}
                         placeholder="e.g. Lenovo ThinkPad T480"
-                        className="w-full p-2 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                        className="w-full p-2 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 font-medium"
                       />
                     </div>
 
@@ -914,7 +914,7 @@ export const AddJobPage: React.FC = () => {
                         value={row.serialNo}
                         onChange={(e) => updateBulkRow(row.id, 'serialNo', e.target.value)}
                         placeholder="e.g. SN-5542"
-                        className="w-full p-2 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full p-2 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10"
                       />
                     </div>
 
@@ -931,7 +931,7 @@ export const AddJobPage: React.FC = () => {
                           if (parts[1]) updateBulkRow(row.id, 'hard', parts[1] || '');
                         }}
                         placeholder="8GB / 256GB SSD"
-                        className="w-full p-2 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full p-2 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10"
                       />
                     </div>
 
@@ -944,7 +944,7 @@ export const AddJobPage: React.FC = () => {
                         value={row.charges}
                         onChange={(e) => updateBulkRow(row.id, 'charges', parseFloat(e.target.value) || 0)}
                         placeholder="1500"
-                        className="w-full p-2 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 font-bold"
+                        className="w-full p-2 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 font-bold"
                       />
                     </div>
 
@@ -958,7 +958,7 @@ export const AddJobPage: React.FC = () => {
                         value={row.symptoms}
                         onChange={(e) => updateBulkRow(row.id, 'symptoms', e.target.value)}
                         placeholder="e.g. Dead / No power on adapter, 3.3V missing"
-                        className="w-full p-2 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full p-2 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10"
                       />
                     </div>
 
@@ -971,7 +971,7 @@ export const AddJobPage: React.FC = () => {
                         value={row.notes}
                         onChange={(e) => updateBulkRow(row.id, 'notes', e.target.value)}
                         placeholder="e.g. No charger included, dealer urgently needs by Monday"
-                        className="w-full p-2 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full p-2 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10"
                       />
                     </div>
                   </div>
@@ -984,7 +984,7 @@ export const AddJobPage: React.FC = () => {
               onClick={addBulkRow}
               className="w-full py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-dashed border-slate-300 dark:border-slate-700"
             >
-              <Plus className="w-4 h-4 text-indigo-500" />
+              <Plus className="w-4 h-4 text-slate-500" />
               <span>Add Another Laptop to this Supplier Batch</span>
             </button>
           </div>

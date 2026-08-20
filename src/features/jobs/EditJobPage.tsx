@@ -180,7 +180,7 @@ export const EditJobPage: React.FC = () => {
                     required
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+                    className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 dark:text-white"
                   />
                 </div>
                 <div>
@@ -192,7 +192,7 @@ export const EditJobPage: React.FC = () => {
                     required
                     value={customerMobile}
                     onChange={(e) => setCustomerMobile(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+                    className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 dark:text-white"
                   />
                 </div>
                 <div>
@@ -203,7 +203,7 @@ export const EditJobPage: React.FC = () => {
                     type="text"
                     value={customerAddress}
                     onChange={(e) => setCustomerAddress(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+                    className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 dark:text-white"
                   />
                 </div>
               </div>
@@ -219,7 +219,7 @@ export const EditJobPage: React.FC = () => {
                     type="button"
                     onClick={() => setJobType('laptop')}
                     className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold transition-colors ${
-                      jobType === 'laptop' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-500'
+                      jobType === 'laptop' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-500'
                     }`}
                   >
                     <Laptop className="w-3.5 h-3.5" /> Laptop
@@ -228,7 +228,7 @@ export const EditJobPage: React.FC = () => {
                     type="button"
                     onClick={() => setJobType('pc')}
                     className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold transition-colors ${
-                      jobType === 'pc' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-500'
+                      jobType === 'pc' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-500'
                     }`}
                   >
                     <Monitor className="w-3.5 h-3.5" /> PC
@@ -245,7 +245,7 @@ export const EditJobPage: React.FC = () => {
                     type="text"
                     value={model}
                     onChange={(e) => setModel(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+                    className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 dark:text-white"
                   />
                 </div>
                 <div>
@@ -256,7 +256,7 @@ export const EditJobPage: React.FC = () => {
                     type="text"
                     value={serialNo}
                     onChange={(e) => setSerialNo(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+                    className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 dark:text-white"
                   />
                 </div>
                 <div>
@@ -267,7 +267,7 @@ export const EditJobPage: React.FC = () => {
                     type="text"
                     value={ram}
                     onChange={(e) => setRam(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+                    className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 dark:text-white"
                   />
                 </div>
                 <div>
@@ -278,7 +278,7 @@ export const EditJobPage: React.FC = () => {
                     type="text"
                     value={hard}
                     onChange={(e) => setHard(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+                    className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 dark:text-white"
                   />
                 </div>
               </div>
@@ -295,7 +295,7 @@ export const EditJobPage: React.FC = () => {
                 rows={4}
                 value={symptoms}
                 onChange={(e) => setSymptoms(e.target.value)}
-                className="w-full p-3 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+                className="w-full p-3 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 dark:text-white"
               />
             </div>
 
@@ -331,7 +331,7 @@ export const EditJobPage: React.FC = () => {
                     type="number"
                     value={charges}
                     onChange={(e) => setCharges(parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 font-bold dark:text-white"
+                    className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 font-bold dark:text-white"
                   />
                 </div>
 
@@ -379,7 +379,7 @@ export const EditJobPage: React.FC = () => {
                       type="button"
                       onClick={() => setDeliverStatus('delivered')}
                       className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold border ${
-                        deliverStatus === 'delivered' ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                        deliverStatus === 'delivered' ? 'bg-slate-900 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                       }`}
                     >
                       DELIVERED
@@ -401,7 +401,7 @@ export const EditJobPage: React.FC = () => {
           </button>
           <button
             type="submit"
-            className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold shadow-md"
+            className="inline-flex items-center gap-2 px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-sm font-bold shadow-md"
           >
             <Save className="w-4 h-4" />
             <span>Update Job Record</span>

@@ -93,7 +93,7 @@ export const BackupPage: React.FC = () => {
         {/* Export Backup Card */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-xs space-y-4">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-blue-50 dark:bg-blue-950 text-blue-600 rounded-xl">
+            <div className="p-3 bg-slate-50 dark:bg-slate-800 text-slate-600 rounded-xl">
               <Download className="w-6 h-6" />
             </div>
             <div>
@@ -109,7 +109,7 @@ export const BackupPage: React.FC = () => {
           <button
             onClick={handleManualBackup}
             disabled={isExporting}
-            className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold shadow-md transition-colors flex items-center justify-center gap-2"
+            className="w-full py-2.5 px-4 bg-slate-600 hover:bg-slate-500 text-white rounded-xl text-xs font-bold shadow-md transition-colors flex items-center justify-center gap-2"
           >
             <Download className="w-4 h-4" />
             <span>{isExporting ? 'Exporting...' : 'Export Backup File (.db)'}</span>

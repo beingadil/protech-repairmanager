@@ -82,7 +82,7 @@ export const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
             value={searchTerm}
             onChange={(e) => handleNameChange(e.target.value)}
             placeholder="Type customer name or mobile..."
-            className="w-full pl-9 pr-8 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none dark:text-white"
+            className="w-full pl-9 pr-8 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 focus:border-transparent outline-none dark:text-white"
           />
           {selectedCustomerId && (
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 flex items-center text-xs font-medium gap-1">
@@ -107,7 +107,7 @@ export const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
                     <Phone className="w-3 h-3" /> {cust.mobile || 'No Phone'}
                   </p>
                 </div>
-                <span className="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full font-medium">
+                <span className="text-xs bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full font-medium">
                   Existing
                 </span>
               </button>
@@ -130,7 +130,7 @@ export const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
               value={mobile}
               onChange={(e) => handleMobileChange(e.target.value)}
               placeholder="03001234567"
-              className="w-full pl-9 pr-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none dark:text-white"
+              className="w-full pl-9 pr-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 focus:border-transparent outline-none dark:text-white"
             />
           </div>
         </div>
@@ -146,7 +146,7 @@ export const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
               value={address}
               onChange={(e) => handleAddressChange(e.target.value)}
               placeholder="Gulberg, Lahore"
-              className="w-full pl-9 pr-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none dark:text-white"
+              className="w-full pl-9 pr-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 focus:border-transparent outline-none dark:text-white"
             />
           </div>
         </div>

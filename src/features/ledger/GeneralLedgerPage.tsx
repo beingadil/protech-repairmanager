@@ -238,7 +238,7 @@ export const GeneralLedgerPage: React.FC = () => {
           {selectedParty && (
             <button
               onClick={() => setSelectedParty(null)}
-              className="text-blue-600 dark:text-blue-400 hover:underline font-semibold"
+              className="text-slate-600 dark:text-slate-300 hover:underline font-semibold"
             >
               Clear Selection
             </button>
@@ -249,7 +249,7 @@ export const GeneralLedgerPage: React.FC = () => {
       {/* Selected Party KPIs */}
       {selectedParty ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="card-container p-4 flex items-center justify-between border-l-4 border-l-blue-500">
+          <div className="card-container p-4 flex items-center justify-between border-l-4 border-l-slate-500">
             <div>
               <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Party</p>
               <h3 className="text-base font-black text-slate-900 dark:text-white font-heading mt-1 truncate max-w-40">
@@ -264,7 +264,7 @@ export const GeneralLedgerPage: React.FC = () => {
                 {customerInfo[selectedParty.name]?.mobile ? ` • ${customerInfo[selectedParty.name].mobile}` : ''}
               </p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/50 flex items-center justify-center text-blue-600 dark:text-blue-400">
+            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
               {selectedParty.type === 'supplier' ? <Building2 className="w-5 h-5" /> : <User className="w-5 h-5" />}
             </div>
           </div>
@@ -299,7 +299,7 @@ export const GeneralLedgerPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="card-container p-4 flex items-center justify-between border-l-4 border-l-indigo-500">
+          <div className="card-container p-4 flex items-center justify-between border-l-4 border-l-slate-500">
             <div>
               <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 Net Ledger Balance
@@ -313,7 +313,7 @@ export const GeneralLedgerPage: React.FC = () => {
               </h3>
               <p className="text-[11px] text-slate-400 mt-0.5">{selectedStats.entries} ledger entries</p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
               <Wallet className="w-5 h-5" />
             </div>
           </div>
@@ -367,7 +367,7 @@ export const GeneralLedgerPage: React.FC = () => {
                       animate={{ opacity: 1 }}
                       onClick={() => selectParty(p)}
                       className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors cursor-pointer ${
-                        isSelected ? 'bg-blue-50/70 dark:bg-blue-950/30' : ''
+                        isSelected ? 'bg-slate-50/70 dark:bg-slate-800/30' : ''
                       }`}
                     >
                       <td className="py-3 px-4">
@@ -472,7 +472,7 @@ export const GeneralLedgerPage: React.FC = () => {
                         <td className="py-3 px-4">
                           <p className="font-semibold text-slate-900 dark:text-slate-100">{tx.description}</p>
                           {tx.token_number && (
-                            <span className="inline-block mt-0.5 text-[11px] font-mono font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded border border-blue-200 dark:border-blue-800/40">
+                            <span className="inline-block mt-0.5 text-[11px] font-mono font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
                               Token: {tx.token_number}
                             </span>
                           )}

@@ -95,7 +95,7 @@ export const SyncSettingsComponent: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800/90 pb-4">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-blue-50 dark:bg-blue-600/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-500/30 rounded-xl shrink-0">
+          <div className="p-3 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-xl shrink-0">
             <Cloud className="w-6 h-6" />
           </div>
           <div>
@@ -103,12 +103,12 @@ export const SyncSettingsComponent: React.FC = () => {
               <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-tight font-heading">
                 Google Drive Zero-API Sync
               </h3>
-              <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/30 uppercase tracking-wider">
+              <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 uppercase tracking-wider">
                 Desktop Sync
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Directly saves sql.js database binary (<code className="text-blue-700 dark:text-blue-300 font-mono">ProDataRepairManager.db</code>) to local Google Drive
+              Directly saves sql.js database binary (<code className="text-slate-700 dark:text-slate-300 font-mono">ProDataRepairManager.db</code>) to local Google Drive
             </p>
           </div>
         </div>
@@ -128,7 +128,7 @@ export const SyncSettingsComponent: React.FC = () => {
       <form onSubmit={handleSavePath} className="space-y-3">
         <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center justify-between">
           <span className="flex items-center gap-1.5">
-            <Folder className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+            <Folder className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
             Local Google Drive Folder Path
           </span>
           <span className="text-[10px] text-slate-400 dark:text-slate-500 font-normal normal-case">
@@ -146,7 +146,7 @@ export const SyncSettingsComponent: React.FC = () => {
                 resetSyncStatus();
               }}
               placeholder="e.g. C:\Users\Admin\Google Drive\ProDataBackups"
-              className="w-full pl-9 pr-3 py-2.5 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700/80 rounded-xl text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:ring-2 focus:ring-blue-600/20 dark:focus:ring-blue-500/30 focus:border-blue-600 dark:focus:border-blue-500 outline-none font-mono transition-all"
+              className="w-full pl-9 pr-3 py-2.5 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700/80 rounded-xl text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 focus:border-slate-900 dark:focus:border-slate-100 outline-none font-mono transition-all"
             />
             <HardDrive className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-3" />
           </div>
@@ -201,7 +201,7 @@ export const SyncSettingsComponent: React.FC = () => {
             title={autoBackupOnClose ? 'Disable Auto-Sync' : 'Enable Auto-Sync'}
           >
             {autoBackupOnClose ? (
-              <ToggleRight className="w-9 h-9 text-blue-600 dark:text-blue-500" />
+              <ToggleRight className="w-9 h-9 text-slate-600 dark:text-slate-300" />
             ) : (
               <ToggleLeft className="w-9 h-9 text-slate-400 dark:text-slate-600" />
             )}
@@ -212,7 +212,7 @@ export const SyncSettingsComponent: React.FC = () => {
         <div className="p-4 bg-slate-50 dark:bg-slate-950/80 border border-slate-200/80 dark:border-slate-800/80 rounded-xl flex items-center justify-between gap-3">
           <div className="space-y-0.5">
             <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+              <Clock className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
               Last Sync Timestamp
             </span>
             <p className="text-[11px] font-mono text-slate-700 dark:text-slate-300">
@@ -277,7 +277,7 @@ export const SyncSettingsComponent: React.FC = () => {
       {/* Security & Info Footnote */}
       <div className="pt-1 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500">
         <span className="flex items-center gap-1.5">
-          <Shield className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+          <Shield className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
           Zero-API Local File System Isolation (No Cloud Tokens Required)
         </span>
         <span className="font-mono text-[10px]">Target: ProDataRepairManager.db</span>

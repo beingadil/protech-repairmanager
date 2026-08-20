@@ -146,7 +146,7 @@ export const EnhancedDatePicker: React.FC<EnhancedDatePickerProps> = ({
           {label} {required && <span className="text-rose-500">*</span>}
         </label>
         {relativeTag && (
-          <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/50">
+          <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
             {relativeTag}
           </span>
         )}
@@ -159,7 +159,7 @@ export const EnhancedDatePicker: React.FC<EnhancedDatePickerProps> = ({
           onClick={() => setIsOpen(!isOpen)}
           className={`input-field flex items-center justify-between cursor-pointer group font-sans text-left transition-all duration-200 ${
             isOpen
-              ? 'border-blue-600 dark:border-blue-500 ring-2 ring-blue-600/20 dark:ring-blue-500/30 shadow-xs'
+              ? 'border-slate-600 dark:border-slate-500 ring-2 ring-slate-600/20 dark:ring-slate-500/30 shadow-xs'
               : 'hover:border-slate-400 dark:hover:border-slate-600'
           }`}
         >
@@ -173,7 +173,7 @@ export const EnhancedDatePicker: React.FC<EnhancedDatePickerProps> = ({
             <span className="text-[11px] font-mono font-medium text-slate-400 dark:text-slate-500 hidden sm:inline px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800/80 rounded-md">
               {value}
             </span>
-            <div className={`p-1 rounded-lg transition-colors ${isOpen ? 'bg-blue-50 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400'}`}>
+            <div className={`p-1 rounded-lg transition-colors ${isOpen ? 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white'}`}>
               <CalendarIcon className="w-4 h-4 shrink-0 transition-transform duration-200 group-hover:scale-110" />
             </div>
           </div>
@@ -207,7 +207,7 @@ export const EnhancedDatePicker: React.FC<EnhancedDatePickerProps> = ({
               onClick={() => handleApplyOffset(p.offsetDays)}
               className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg border transition-all cursor-pointer ${
                 isSelected
-                  ? 'bg-blue-600 text-white border-blue-600 shadow-2xs scale-105'
+                  ? 'bg-slate-600 text-white border-slate-600 shadow-2xs scale-105'
                   : 'bg-slate-100/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 border-slate-200/80 dark:border-slate-700/80 hover:bg-slate-200/80 dark:hover:bg-slate-700/80 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
@@ -297,9 +297,9 @@ export const EnhancedDatePicker: React.FC<EnhancedDatePickerProps> = ({
                     }}
                     className={`py-1 text-[11px] rounded-lg font-semibold transition-all cursor-pointer relative ${
                       isSelected
-                        ? 'bg-blue-600 text-white shadow-2xs font-bold scale-105'
+                        ? 'bg-slate-600 text-white shadow-2xs font-bold scale-105'
                         : isToday
-                        ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-300 dark:border-blue-700/80 font-bold'
+                        ? 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-700 font-bold'
                         : isDisabled
                         ? 'text-slate-300 dark:text-slate-700 cursor-not-allowed'
                         : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -320,7 +320,7 @@ export const EnhancedDatePicker: React.FC<EnhancedDatePickerProps> = ({
                   onChange(todayISO);
                   setIsOpen(false);
                 }}
-                className="text-blue-600 dark:text-blue-400 font-bold hover:underline cursor-pointer"
+                className="text-slate-600 dark:text-slate-300 font-bold hover:underline cursor-pointer"
               >
                 Today
               </button>

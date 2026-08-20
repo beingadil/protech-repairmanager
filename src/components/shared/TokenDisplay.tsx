@@ -20,7 +20,7 @@ export const TokenDisplay: React.FC<TokenDisplayProps> = ({
 
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700 shadow-xs ${sizeClasses}`}>
-      {showIcon && <Tag className="w-3.5 h-3.5 text-blue-500" />}
+      {showIcon && <Tag className="w-3.5 h-3.5 text-slate-500" />}
       {token}
     </span>
   );

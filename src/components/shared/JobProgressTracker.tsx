@@ -76,7 +76,7 @@ export const JobProgressTracker: React.FC<JobProgressTrackerProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400">
+          <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
             <Clock className="w-4 h-4" />
           </div>
           <div>
@@ -95,7 +95,7 @@ export const JobProgressTracker: React.FC<JobProgressTrackerProps> = ({
               ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
               : overdue
               ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800'
-              : 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800'
+              : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
           }`}>
             {progressPercentage}% Completed
           </span>
@@ -130,7 +130,7 @@ export const JobProgressTracker: React.FC<JobProgressTrackerProps> = ({
               ? 'bg-emerald-500'
               : overdue
               ? 'bg-amber-500'
-              : 'bg-blue-600'
+              : 'bg-slate-600'
           }`}
           style={{ maxWidth: 'calc(100% - 3rem)' }}
         />
@@ -153,7 +153,7 @@ export const JobProgressTracker: React.FC<JobProgressTrackerProps> = ({
                       : isCurrent
                       ? step.isOverdue
                         ? 'bg-amber-500 text-white border-amber-500 ring-4 ring-amber-500/20 animate-pulse'
-                        : 'bg-blue-600 text-white border-blue-600 ring-4 ring-blue-600/20'
+                        : 'bg-slate-600 text-white border-slate-600 ring-4 ring-slate-600/20'
                       : 'bg-white dark:bg-slate-900 text-slate-400 dark:text-slate-600 border-slate-200 dark:border-slate-800'
                   }`}
                 >
