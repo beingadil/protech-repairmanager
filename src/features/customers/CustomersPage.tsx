@@ -32,13 +32,16 @@ import { formatCurrency, formatDate, isOverdue } from '../../lib/utils';
 import { exportCustomersToCSV } from '../../lib/export-utils';
 import { StatusBadge } from '../../components/shared/StatusBadge';
 import { TokenDisplay } from '../../components/shared/TokenDisplay';
+import { useCustomersStore } from '../../store/customers';
 
 export const CustomersPage: React.FC = () => {
   const navigate = useNavigate();
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>(() => useCustomersStore.getState().customers);
   const [search, setSearch] = useState('');
   const [typeTab, setTypeTab] = useState<'all' | 'customer' | 'supplier'>('all');
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(useCustomersStore.getState().customers.length === 0);
+  // Incremental grid rendering: large directories stay fast on tab switches
+  const [visibleCount, setVisibleCount] = useState(24);
 
   // Selected party for detailed history view
   const [selectedParty, setSelectedParty] = useState<Customer | null>(null);
@@ -47,8 +50,9 @@ export const CustomersPage: React.FC = () => {
   const [historyTab, setHistoryTab] = useState<'laptops' | 'ledger'>('laptops');
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
-  // Add Party Modal
+  // Add / Edit Party Modal
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingParty, setEditingParty] = useState<Customer | null>(null);
   const [newName, setNewName] = useState('');
   const [newMobile, setNewMobile] = useState('');
   const [newAddress, setNewAddress] = useState('');
@@ -64,6 +68,10 @@ export const CustomersPage: React.FC = () => {
   useEffect(() => {
     loadCustomers();
   }, []);
+
+  useEffect(() => {
+    setVisibleCount(24);
+  }, [typeTab, search]);
 
   const loadCustomers = async () => {
     setIsLoading(true);
@@ -82,6 +90,7 @@ export const CustomersPage: React.FC = () => {
         ORDER BY total_jobs DESC, c.id DESC
       `);
       setCustomers(res);
+      useCustomersStore.getState().setCustomers(res);
     } catch (e) {
       console.error('Failed to load customer directory:', e);
       toast.error('Failed to load customers & suppliers.');
@@ -124,7 +133,24 @@ export const CustomersPage: React.FC = () => {
     }
   };
 
-  // Add new Customer or Supplier
+  // Add or update Customer / Supplier (single form, mode driven by editingParty)
+  const closePartyForm = () => {
+    setIsAddModalOpen(false);
+    setEditingParty(null);
+    setNewName('');
+    setNewMobile('');
+    setNewAddress('');
+    setNewPartyType('customer');
+  };
+
+  const handleOpenEditParty = (party: Customer) => {
+    setEditingParty(party);
+    setNewName(party.name);
+    setNewMobile(party.mobile || '');
+    setNewAddress(party.address || '');
+    setNewPartyType((party.party_type as PartyType) === 'supplier' ? 'supplier' : 'customer');
+  };
+
   const handleAddParty = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName.trim()) {
@@ -134,21 +160,24 @@ export const CustomersPage: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      await execute(
-        'INSERT INTO customers (name, mobile, address, party_type, created_at, updated_at) VALUES (?, ?, ?, ?, datetime("now"), datetime("now"))',
-        [newName.trim(), newMobile.trim() || '03000000000', newAddress.trim() || '', newPartyType]
-      );
-
-      toast.success(`${newPartyType === 'supplier' ? 'Market Supplier' : 'Customer'} "${newName}" added!`);
-      setIsAddModalOpen(false);
-      setNewName('');
-      setNewMobile('');
-      setNewAddress('');
-      setNewPartyType('customer');
+      if (editingParty) {
+        await execute(
+          'UPDATE customers SET name = ?, mobile = ?, address = ?, party_type = ?, updated_at = datetime("now") WHERE id = ?',
+          [newName.trim(), newMobile.trim() || '03000000000', newAddress.trim() || '', newPartyType, editingParty.id]
+        );
+        toast.success(`"${newName.trim()}" updated!`);
+      } else {
+        await execute(
+          'INSERT INTO customers (name, mobile, address, party_type, created_at, updated_at) VALUES (?, ?, ?, ?, datetime("now"), datetime("now"))',
+          [newName.trim(), newMobile.trim() || '03000000000', newAddress.trim() || '', newPartyType]
+        );
+        toast.success(`${newPartyType === 'supplier' ? 'Market Supplier' : 'Customer'} "${newName}" added!`);
+      }
+      closePartyForm();
       loadCustomers();
     } catch (err) {
-      console.error('Failed to add party:', err);
-      toast.error('Failed to add record.');
+      console.error('Failed to save party:', err);
+      toast.error('Failed to save record.');
     } finally {
       setIsSubmitting(false);
     }
@@ -215,6 +244,7 @@ export const CustomersPage: React.FC = () => {
 
   const customerCount = useMemo(() => customers.filter((c) => c.party_type !== 'supplier').length, [customers]);
   const supplierCount = useMemo(() => customers.filter((c) => c.party_type === 'supplier').length, [customers]);
+  const visibleParties = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
 
   return (
     <motion.div
@@ -314,14 +344,14 @@ export const CustomersPage: React.FC = () => {
 
       {/* Grid of Customer / Supplier Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {isLoading ? (
+        {(isLoading && customers.length === 0) ? (
           <div className="col-span-full py-12 text-center text-slate-400">Loading directory records...</div>
         ) : filtered.length === 0 ? (
           <div className="col-span-full py-12 text-center text-slate-400">
             No customer or supplier records found matching search.
           </div>
         ) : (
-          filtered.map((c) => {
+          visibleParties.map((c) => {
             const isSupplier = c.party_type === 'supplier';
             const pendingCount = c.pending_jobs || 0;
             const totalCount = c.total_jobs || 0;
@@ -359,15 +389,27 @@ export const CustomersPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                      isSupplier
-                        ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800'
-                        : 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
-                    }`}
-                  >
-                    {isSupplier ? 'Supplier' : 'Customer'}
-                  </span>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                        isSupplier
+                          ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800'
+                          : 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+                      }`}
+                    >
+                      {isSupplier ? 'Supplier' : 'Customer'}
+                    </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenEditParty(c);
+                      }}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                      title="Edit details"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
 
                 {c.address && (
@@ -420,6 +462,16 @@ export const CustomersPage: React.FC = () => {
           })
         )}
       </div>
+
+      {/* Load more for large directories */}
+      {!isLoading && filtered.length > visibleParties.length && (
+        <button
+          onClick={() => setVisibleCount((n) => n + 24)}
+          className="btn-secondary w-full"
+        >
+          Load More ({filtered.length - visibleParties.length} remaining)
+        </button>
+      )}
 
       {/* DETAILED HISTORY DRAWER / MODAL */}
       <AnimatePresence>
@@ -672,9 +724,9 @@ export const CustomersPage: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* MODAL: ADD CUSTOMER / SUPPLIER */}
+      {/* MODAL: ADD / EDIT CUSTOMER / SUPPLIER */}
       <AnimatePresence>
-        {isAddModalOpen && (
+        {(isAddModalOpen || editingParty !== null) && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -684,10 +736,10 @@ export const CustomersPage: React.FC = () => {
             >
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                 <h3 className="font-bold text-base text-slate-900 dark:text-white font-heading">
-                  Add New Customer / Market Supplier
+                  {editingParty ? `Edit ${editingParty.party_type === 'supplier' ? 'Supplier' : 'Customer'}` : 'Add New Customer / Market Supplier'}
                 </h3>
                 <button
-                  onClick={() => setIsAddModalOpen(false)}
+                  onClick={closePartyForm}
                   className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                 >
                   <X className="w-5 h-5" />
@@ -769,7 +821,7 @@ export const CustomersPage: React.FC = () => {
                 <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                   <button
                     type="button"
-                    onClick={() => setIsAddModalOpen(false)}
+                    onClick={closePartyForm}
                     className="btn-secondary"
                   >
                     Cancel
@@ -780,7 +832,7 @@ export const CustomersPage: React.FC = () => {
                     className="btn-primary"
                   >
                     <CheckCircle2 className="w-4 h-4" />
-                    <span>Save Party</span>
+                    <span>{editingParty ? 'Save Changes' : 'Save Party'}</span>
                   </button>
                 </div>
               </form>
