@@ -76,7 +76,7 @@ export const JobDetailPage: React.FC = () => {
   const handleToggleDelivery = async () => {
     if (!job) return;
     const newStatus = job.deliver_status === 'delivered' ? 'pending' : 'delivered';
-    await execute('UPDATE jobs SET deliver_status = ?, updated_at = datetime("now") WHERE id = ?', [
+    await execute(`UPDATE jobs SET deliver_status = ?, updated_at = datetime('now') WHERE id = ?`, [
       newStatus,
       job.id
     ]);
@@ -87,7 +87,7 @@ export const JobDetailPage: React.FC = () => {
   const handleDeleteJob = async () => {
     if (!job) return;
     if (confirm(`Are you sure you want to soft-delete repair record ${job.token_number}?`)) {
-      await execute('UPDATE jobs SET deleted_at = datetime("now") WHERE id = ?', [job.id]);
+      await execute(`UPDATE jobs SET deleted_at = datetime('now') WHERE id = ?`, [job.id]);
       toast.success('Job record deleted.');
       navigate('/jobs');
     }
@@ -109,7 +109,7 @@ export const JobDetailPage: React.FC = () => {
 
     // Log notification
     execute(
-      'INSERT INTO job_notifications (job_id, channel, message, sent_at, status) VALUES (?, "whatsapp", ?, datetime("now"), "sent")',
+      `INSERT INTO job_notifications (job_id, channel, message, sent_at, status) VALUES (?, 'whatsapp', ?, datetime('now'), 'sent')`,
       [job.id, message]
     );
   };
@@ -489,7 +489,7 @@ export const JobDetailPage: React.FC = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setShowNotifyModal(false)}
-            className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 screen-only"
+            className="fixed inset-0 z-50 bg-slate-900/60  flex items-center justify-center p-4 screen-only"
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}

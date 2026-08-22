@@ -162,13 +162,13 @@ export const CustomersPage: React.FC = () => {
     try {
       if (editingParty) {
         await execute(
-          'UPDATE customers SET name = ?, mobile = ?, address = ?, party_type = ?, updated_at = datetime("now") WHERE id = ?',
+          `UPDATE customers SET name = ?, mobile = ?, address = ?, party_type = ?, updated_at = datetime('now') WHERE id = ?`,
           [newName.trim(), newMobile.trim() || '03000000000', newAddress.trim() || '', newPartyType, editingParty.id]
         );
         toast.success(`"${newName.trim()}" updated!`);
       } else {
         await execute(
-          'INSERT INTO customers (name, mobile, address, party_type, created_at, updated_at) VALUES (?, ?, ?, ?, datetime("now"), datetime("now"))',
+          `INSERT INTO customers (name, mobile, address, party_type, created_at, updated_at) VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))`,
           [newName.trim(), newMobile.trim() || '03000000000', newAddress.trim() || '', newPartyType]
         );
         toast.success(`${newPartyType === 'supplier' ? 'Market Supplier' : 'Customer'} "${newName}" added!`);
@@ -199,7 +199,7 @@ export const CustomersPage: React.FC = () => {
         `INSERT INTO financial_transactions (
           date, type, amount, category, payment_method, customer_name, supplier_name,
           description, notes, created_at, updated_at
-        ) VALUES (date("now"), ?, ?, ?, 'cash', ?, ?, ?, ?, datetime("now"), datetime("now"))`,
+        ) VALUES (date('now'), ?, ?, ?, 'cash', ?, ?, ?, ?, datetime('now'), datetime('now'))`,
         [
           paymentType,
           amt,
@@ -476,7 +476,7 @@ export const CustomersPage: React.FC = () => {
       {/* DETAILED HISTORY DRAWER / MODAL */}
       <AnimatePresence>
         {selectedParty && (
-          <div className="fixed inset-0 z-50 flex items-center justify-end bg-slate-900/60 backdrop-blur-xs">
+          <div className="fixed inset-0 z-50 flex items-center justify-end bg-slate-900/60">
             <motion.div
               initial={{ opacity: 0, x: '100%' }}
               animate={{ opacity: 1, x: 0 }}
@@ -727,7 +727,7 @@ export const CustomersPage: React.FC = () => {
       {/* MODAL: ADD / EDIT CUSTOMER / SUPPLIER */}
       <AnimatePresence>
         {(isAddModalOpen || editingParty !== null) && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -844,7 +844,7 @@ export const CustomersPage: React.FC = () => {
       {/* QUICK PAYMENT MODAL */}
       <AnimatePresence>
         {isPaymentModalOpen && selectedParty && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}

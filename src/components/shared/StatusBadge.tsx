@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Clock, AlertCircle, PackageCheck, PackageX } from 'lucide-react';
+import { CheckCircle2, Clock, AlertCircle, PackageCheck, PackageX, Wrench, Search, Package } from 'lucide-react';
 import { PaymentStatus, DeliverStatus } from '../../types/job';
 
 interface StatusBadgeProps {
@@ -46,18 +46,39 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
     );
   }
 
-  // deliver
-  const isDelivered = status === 'delivered';
+  // deliver — 5-stage workflow
+  const deliverConfig: Record<string, { icon: React.ReactNode; label: string; cls: string }> = {
+    pending: {
+      icon: <PackageX className="w-3.5 h-3.5" />,
+      label: 'PENDING',
+      cls: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/25'
+    },
+    in_progress: {
+      icon: <Wrench className="w-3.5 h-3.5" />,
+      label: 'IN PROGRESS',
+      cls: 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30'
+    },
+    in_diagnostics: {
+      icon: <Search className="w-3.5 h-3.5" />,
+      label: 'DIAGNOSTICS',
+      cls: 'bg-violet-500/15 text-violet-600 dark:text-violet-400 border-violet-500/30'
+    },
+    ready: {
+      icon: <Package className="w-3.5 h-3.5" />,
+      label: 'READY',
+      cls: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
+    },
+    delivered: {
+      icon: <PackageCheck className="w-3.5 h-3.5" />,
+      label: 'DELIVERED',
+      cls: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+    }
+  };
+  const cfg = deliverConfig[String(status)] || deliverConfig.pending;
   return (
-    <span
-      className={`inline-flex items-center rounded-full border ${sizeClasses} ${
-        isDelivered
-          ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
-          : 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/25'
-      }`}
-    >
-      {isDelivered ? <PackageCheck className="w-3.5 h-3.5" /> : <PackageX className="w-3.5 h-3.5" />}
-      {isDelivered ? 'DELIVERED' : 'PENDING'}
+    <span className={`inline-flex items-center rounded-full border ${sizeClasses} ${cfg.cls}`}>
+      {cfg.icon}
+      {cfg.label}
     </span>
   );
 };

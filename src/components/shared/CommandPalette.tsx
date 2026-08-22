@@ -58,7 +58,7 @@ export const CommandPalette: React.FC = () => {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15 }}
           onClick={() => setCommandPaletteOpen(false)}
-          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-start justify-center pt-20 px-4"
+          className="fixed inset-0 z-50 bg-slate-900/60 flex items-start justify-center pt-20 px-4"
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: -12 }}

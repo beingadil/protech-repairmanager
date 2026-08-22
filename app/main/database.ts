@@ -188,6 +188,12 @@ const MIGRATIONS = [
   CREATE INDEX IF NOT EXISTS idx_jobs_due_sort ON jobs(deleted_at, deliver_status, return_date);
   CREATE INDEX IF NOT EXISTS idx_fin_token_type ON financial_transactions(token_number, type);
   CREATE INDEX IF NOT EXISTS idx_trans_created_at ON inventory_transactions(created_at);
+
+  -- Composite indexes for the heaviest queries (payments list, customer history)
+  CREATE INDEX IF NOT EXISTS idx_fin_sort ON financial_transactions(date DESC, id DESC);
+  CREATE INDEX IF NOT EXISTS idx_jobs_cust_deleted ON jobs(customer_id, deleted_at);
+  CREATE INDEX IF NOT EXISTS idx_fin_lookup ON financial_transactions(customer_name, type, date);
+  CREATE INDEX IF NOT EXISTS idx_fin_supplier_lookup ON financial_transactions(supplier_name, type, date);
   `
 ];
 
@@ -233,6 +239,10 @@ export function getDb(): Database.Database {
     migrationsRan = true;
   }
 
+  // ANALYZE updates SQLite's internal statistics so the query planner picks
+  // optimal indexes instead of falling back to full table scans.
+  try { dbInstance.exec('ANALYZE'); } catch { /* non-fatal */ }
+
   return dbInstance;
 }
 
@@ -253,6 +263,33 @@ export function execute(sql: string, params: unknown[] = []): void {
   } else {
     db.exec(sql);
   }
+}
+
+/**
+ * Execute multiple SQL statements in a single IPC round-trip.
+ * Each item is { sql, params? }. Runs inside a transaction for atomicity
+ * and a ~10x write-speed boost from WAL batching.
+ */
+export function batchExecute(
+  operations: Array<{ sql: string; params?: unknown[] }>
+): unknown[] {
+  const db = getDb();
+  const results: unknown[] = [];
+  const runTransaction = db.transaction(() => {
+    for (const op of operations) {
+      if (typeof op.sql !== 'string' || !op.sql.trim()) throw new Error('Invalid SQL in batch.');
+      const args = Array.isArray(op.params) ? op.params : [];
+      const stmt = db.prepare(op.sql);
+      if (op.sql.trimStart().toUpperCase().startsWith('SELECT')) {
+        results.push(args.length > 0 ? stmt.all(...args) : stmt.all());
+      } else {
+        const info = args.length > 0 ? stmt.run(...args) : stmt.run();
+        results.push({ changes: info.changes, lastInsertRowid: Number(info.lastInsertRowid) });
+      }
+    }
+  });
+  runTransaction();
+  return results;
 }
 
 // Consistent on-disk snapshot: fold WAL back into the main file, then read it.
@@ -295,6 +332,7 @@ export function resetToProduction(): void {
 function closeDb(): void {
   if (dbInstance) {
     try {
+      dbInstance.pragma('optimize');
       dbInstance.pragma('wal_checkpoint(TRUNCATE)');
       dbInstance.close();
     } catch (err) {

@@ -2,7 +2,7 @@ import { app, dialog, ipcMain } from 'electron';
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { join, isAbsolute } from 'node:path';
 import { checkForUpdates, quitAndInstall, canCheckForUpdates } from './updater';
-import { query as dbQuery, execute as dbExecute, exportBinary, importBinary, resetToProduction, getDbPath } from './database';
+import { query as dbQuery, execute as dbExecute, batchExecute, exportBinary, importBinary, resetToProduction, getDbPath } from './database';
 
 export function registerIpcHandlers(): void {
   // Native SQLite bridge — renderer never touches the file directly.
@@ -17,6 +17,13 @@ export function registerIpcHandlers(): void {
     const args = Array.isArray(params) ? params : [];
     dbExecute(sql, args);
     return { ok: true };
+  });
+
+  // Batch: multiple operations in a single IPC round-trip, inside a
+  // transaction for atomicity and WAL write amplification.
+  ipcMain.handle('db:batch', (_e, ops: unknown) => {
+    if (!Array.isArray(ops) || ops.length === 0) throw new Error('Invalid batch payload.');
+    return batchExecute(ops as Array<{ sql: string; params?: unknown[] }>);
   });
 
   ipcMain.handle('db:export-binary', () => exportBinary());

@@ -2,6 +2,7 @@ export interface ProdataBridge {
   db: {
     query(sql: string, params?: unknown[]): Promise<unknown[]>;
     execute(sql: string, params?: unknown[]): Promise<{ ok: true }>;
+    batch(ops: Array<{ sql: string; params?: unknown[] }>): Promise<unknown[]>;
     exportBinary(): Promise<Uint8Array>;
     importBinary(bytes: Uint8Array | number[]): Promise<{ ok: true }>;
     resetProduction(): Promise<{ ok: true }>;

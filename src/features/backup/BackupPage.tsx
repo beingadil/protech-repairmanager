@@ -40,7 +40,7 @@ export const BackupPage: React.FC = () => {
 
       // Log backup
       await execute(
-        'INSERT INTO backup_log (file_path, file_name, size_bytes, backup_type, created_at) VALUES (?, ?, ?, "manual", datetime("now"))',
+        `INSERT INTO backup_log (file_path, file_name, size_bytes, backup_type, created_at) VALUES (?, ?, ?, 'manual', datetime('now'))`,
         [fileName, fileName, binary.byteLength]
       );
 

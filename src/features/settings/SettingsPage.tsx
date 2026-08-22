@@ -1026,7 +1026,7 @@ export const SettingsPage: React.FC = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setEditingUserPassword(null)}
-            className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 bg-slate-950/70  flex items-center justify-center p-4"
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -1095,7 +1095,7 @@ export const SettingsPage: React.FC = () => {
               setIsWipeModalOpen(false);
               setWipeConfirmInput('');
             }}
-            className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 bg-slate-950/70  flex items-center justify-center p-4"
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}

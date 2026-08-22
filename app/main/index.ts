@@ -88,7 +88,65 @@ function createWindow(): void {
               await window.prodata.db.query('SELECT b.status, COUNT(*) AS n FROM __bench b LEFT JOIN __bench c ON c.id = b.id GROUP BY b.status');
               const joinMs = +(performance.now() - joinMsT).toFixed(1);
               await window.prodata.db.execute('DROP TABLE __bench');
-              return JSON.stringify({ dbOk: true, v: r && r[0] ? r[0].v : null, pingMs, insert500Ms: insertMs, perInsertMs: +(insertMs / 500).toFixed(3), aggMs, selfJoinMs: joinMs, aggRows: agg.length });
+
+              // --- SQL mutation regression: exercise every pattern that broke
+              //     with double-quoted string literals in strict better-sqlite3.
+              try {
+                // Customer INSERT with datetime('now')
+                await window.prodata.db.execute(
+                  'INSERT INTO customers (name, mobile, address, party_type, created_at, updated_at) VALUES (?, ?, ?, ?, datetime(' + "'now'" + '), datetime(' + "'now'" + '))',
+                  ['SMOKE-CUST', '03000000000', '', 'customer']
+                );
+                const cid = await window.prodata.db.query('SELECT last_insert_rowid() AS id');
+                const customerId = cid[0] && cid[0].id;
+
+                // Job INSERT with datetime('now')
+                await window.prodata.db.execute(
+                  'INSERT INTO jobs (token_number, customer_id, job_type, serial_no, model, ram, hard, processor, symptoms, receive_date, return_date, charges, has_charger, payment_status, deliver_status, notes, reference_token, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime(' + "'now'" + '), datetime(' + "'now'" + '))',
+                  ['SMOKE-TK', customerId, 'laptop', 'SN1', 'Test Model', '8GB', '256GB', 'i5', 'Smoke test', '2024-01-01', '2024-01-04', 1500, 1, 'due', 'pending', '', null]
+                );
+                const jid = await window.prodata.db.query('SELECT last_insert_rowid() AS id');
+                const jobId = jid[0] && jid[0].id;
+
+                // UPDATE with datetime('now')
+                await window.prodata.db.execute(
+                  'UPDATE jobs SET deliver_status = ?, updated_at = datetime(' + "'now'" + ') WHERE id = ?',
+                  ['delivered', jobId]
+                );
+                await window.prodata.db.execute(
+                  'UPDATE jobs SET deleted_at = datetime(' + "'now'" + ') WHERE id = ?',
+                  [jobId]
+                );
+
+                // backup_log with 'manual' literal
+                await window.prodata.db.execute(
+                  "INSERT INTO backup_log (file_path, file_name, size_bytes, backup_type, created_at) VALUES (?, ?, ?, 'manual', datetime('" + "now" + "'))",
+                  ['smoke.db', 'smoke.db', 0]
+                );
+
+                // job_notifications with 'whatsapp' + 'sent' literals
+                await window.prodata.db.execute(
+                  "INSERT INTO job_notifications (job_id, channel, message, sent_at, status) VALUES (?, 'whatsapp', ?, datetime('" + "now" + "'), 'sent')",
+                  [jobId, 'Smoke notification']
+                );
+
+                // financial_transactions with date('now') and datetime('now')
+                await window.prodata.db.execute(
+                  "INSERT INTO financial_transactions (date, type, amount, category, payment_method, customer_name, token_number, description, notes, created_at, updated_at) VALUES (date('" + "now" + "'), ?, ?, ?, 'cash', ?, ?, ?, ?, datetime('" + "now" + "'), datetime('" + "now" + "'))",
+                  ['credit', 1500, 'repair_income', 'SMOKE-CUST', 'SMOKE-TK', 'Smoke test', 'Smoke']
+                );
+
+                // Cleanup (in reverse order to respect FKs)
+                await window.prodata.db.execute('DELETE FROM financial_transactions WHERE token_number = ?', ['SMOKE-TK']);
+                await window.prodata.db.execute('DELETE FROM job_notifications WHERE job_id = ?', [jobId]);
+                await window.prodata.db.execute('DELETE FROM backup_log WHERE file_name = ?', ['smoke.db']);
+                await window.prodata.db.execute('DELETE FROM jobs WHERE id = ?', [jobId]);
+                await window.prodata.db.execute('DELETE FROM customers WHERE name = ?', ['SMOKE-CUST']);
+
+                return JSON.stringify({ dbOk: true, v: r && r[0] ? r[0].v : null, pingMs, insert500Ms: insertMs, perInsertMs: +(insertMs / 500).toFixed(3), aggMs, selfJoinMs: joinMs, aggRows: agg.length, sqlMutation: 'pass' });
+              } catch (sqlErr) {
+                return JSON.stringify({ dbOk: true, v: r && r[0] ? r[0].v : null, sqlMutation: 'FAIL', sqlErr: String(sqlErr) });
+              }
             } catch (e) {
               return JSON.stringify({ dbOk: false, err: String(e) });
             }

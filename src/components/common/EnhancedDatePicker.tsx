@@ -229,7 +229,7 @@ export const EnhancedDatePicker: React.FC<EnhancedDatePickerProps> = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.95 }}
             transition={{ type: 'spring', damping: 26, stiffness: 380 }}
-            className="absolute left-1/2 -translate-x-1/2 z-50 mt-2 w-64 p-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-800/90 rounded-2xl shadow-xl dark:shadow-2xl space-y-2.5 ring-1 ring-slate-900/5 dark:ring-white/10"
+            className="absolute left-1/2 -translate-x-1/2 z-50 mt-2 w-64 p-3 bg-white/95 dark:bg-slate-900/95  border border-slate-200/90 dark:border-slate-800/90 rounded-2xl shadow-xl dark:shadow-2xl space-y-2.5 ring-1 ring-slate-900/5 dark:ring-white/10"
           >
             {/* Header: Month / Year Controls */}
             <div className="flex items-center justify-between pb-1.5 border-b border-slate-100 dark:border-slate-800">

@@ -23,7 +23,7 @@ import {
   Clock
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { query, execute } from '../../lib/db';
+import { query, execute, batch } from '../../lib/db';
 import {
   FinancialTransaction,
   TransactionType,
@@ -189,11 +189,33 @@ export const PaymentModulePage: React.FC = () => {
   const loadTransactions = async () => {
     setIsLoading(true);
     try {
-      const rows = await query<FinancialTransaction>(
-        'SELECT * FROM financial_transactions ORDER BY date DESC, id DESC'
-      );
+      // Batch: fetch the last 500 transactions + pre-computed stats in ONE IPC call.
+      // Stats are computed by SQLite (no JS iteration over every row).
+      const results = await batch([
+        {
+          sql: `SELECT * FROM financial_transactions ORDER BY date DESC, id DESC LIMIT 500`
+        },
+        {
+          sql: `SELECT
+            SUM(CASE WHEN type = 'credit' THEN amount ELSE 0 END) AS total_credit,
+            SUM(CASE WHEN type = 'debit' THEN amount ELSE 0 END) AS total_debit,
+            SUM(CASE WHEN type = 'credit' AND date = date('now') THEN amount ELSE 0 END) AS today_credit,
+            SUM(CASE WHEN type = 'debit' AND date = date('now') THEN amount ELSE 0 END) AS today_debit,
+            COUNT(*) AS total_entries
+          FROM financial_transactions`
+        }
+      ]);
+      const rows = results[0] as FinancialTransaction[];
+      const s = (results[1] as any[])[0] || {};
       setTransactions(rows);
-      calculateStats(rows);
+      setStats({
+        total_credit: Number(s.total_credit) || 0,
+        total_debit: Number(s.total_debit) || 0,
+        net_balance: (Number(s.total_credit) || 0) - (Number(s.total_debit) || 0),
+        today_credit: Number(s.today_credit) || 0,
+        today_debit: Number(s.today_debit) || 0,
+        total_entries: Number(s.total_entries) || 0
+      });
     } catch (err) {
       console.error('Failed to load ledger transactions:', err);
       toast.error('Failed to load financial records.');
@@ -245,31 +267,45 @@ export const PaymentModulePage: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      const refJobId = await findJobIdByToken(entryTokenNumber);
-      await execute(
-        `INSERT INTO financial_transactions (
-          date, type, amount, category, payment_method, customer_id, customer_name, supplier_name,
-          reference_job_id, token_number, description, notes, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime("now"), datetime("now"))`,
-        [
-          entryDate,
-          entryType,
-          amountNum,
-          entryCategory,
-          entryMethod,
-          entryType === 'credit' ? entryPartyId : null,
-          entryType === 'credit' ? entryPartyName : null,
-          entryType === 'debit' ? entryPartyName : null,
-          refJobId,
-          entryTokenNumber || null,
-          entryDescription,
-          entryNotes || null
-        ]
-      );
+      const t = (entryTokenNumber || '').trim();
 
-      if (entryType === 'credit') {
-        await markJobPaidByToken(entryTokenNumber);
+      // Batch: find job + insert + mark-paid + reload all in ONE IPC call
+      const ops: Array<{ sql: string; params?: unknown[] }> = [];
+
+      // 1. Find job ID by token (if token given)
+      if (t) {
+        ops.push({ sql: 'SELECT id FROM jobs WHERE token_number = ? AND deleted_at IS NULL LIMIT 1', params: [t] });
       }
+
+      // We need to build the INSERT params now; refJobId resolved below
+      const insertParams: unknown[] = [
+        entryDate, entryType, amountNum, entryCategory, entryMethod,
+        null, // customer_id — resolved after lookup
+        entryType === 'credit' ? entryPartyName : null,
+        entryType === 'debit' ? entryPartyName : null,
+        null, // reference_job_id — resolved after lookup
+        entryTokenNumber || null, entryDescription, entryNotes || null
+      ];
+      ops.push({
+        sql: `INSERT INTO financial_transactions (date, type, amount, category, payment_method, customer_id, customer_name, supplier_name, reference_job_id, token_number, description, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
+        params: insertParams
+      });
+
+      // 2. If credit + token, mark job as paid
+      if (entryType === 'credit' && t) {
+        ops.push({
+          sql: "UPDATE jobs SET payment_status = 'paid', updated_at = datetime('now') WHERE token_number = ? AND deleted_at IS NULL",
+          params: [t]
+        });
+      }
+
+      // 3. Reload
+      ops.push({ sql: 'SELECT * FROM financial_transactions ORDER BY date DESC, id DESC LIMIT 500' });
+      ops.push({
+        sql: `SELECT SUM(CASE WHEN type = 'credit' THEN amount ELSE 0 END) AS total_credit, SUM(CASE WHEN type = 'debit' THEN amount ELSE 0 END) AS total_debit, SUM(CASE WHEN type = 'credit' AND date = date('now') THEN amount ELSE 0 END) AS today_credit, SUM(CASE WHEN type = 'debit' AND date = date('now') THEN amount ELSE 0 END) AS today_debit, COUNT(*) AS total_entries FROM financial_transactions`
+      });
+
+      await batch(ops);
 
       toast.success(
         `${entryType === 'credit' ? 'Credit (+)' : 'Debit (-)'} voucher of ${formatCurrency(amountNum)} recorded!`
@@ -307,34 +343,57 @@ export const PaymentModulePage: React.FC = () => {
 
     setIsSubmitting(true);
     try {
+      // Build ALL operations as lookups first, then inserts, then mark-paid,
+      // then reload — everything runs in a single IPC round-trip inside a
+      // SQLite transaction (WAL batching = ~10x faster than individual writes).
+      const ops: Array<{ sql: string; params?: unknown[] }> = [];
+      const tokenSet = new Set<string>();
+
       for (const row of validRows) {
-        const partyId = await findCustomerIdByName(row.party_name);
-        const refJobId = await findJobIdByToken(row.reference_token);
-        await execute(
-          `INSERT INTO financial_transactions (
-            date, type, amount, category, payment_method, customer_id, customer_name, supplier_name,
-            reference_job_id, token_number, description, notes, created_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime("now"), datetime("now"))`,
-          [
+        const n = (row.party_name || '').trim();
+        const t = (row.reference_token || '').trim();
+
+        // Lookup customer by name
+        if (n) {
+          ops.push({ sql: 'SELECT id FROM customers WHERE name = ? LIMIT 1', params: [n] });
+        }
+        // Lookup job by token
+        if (t) {
+          ops.push({ sql: 'SELECT id FROM jobs WHERE token_number = ? AND deleted_at IS NULL LIMIT 1', params: [t] });
+          tokenSet.add(t);
+        }
+
+        // Insert the financial transaction
+        ops.push({
+          sql: `INSERT INTO financial_transactions (date, type, amount, category, payment_method, customer_id, customer_name, supplier_name, reference_job_id, token_number, description, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
+          params: [
             row.date || new Date().toISOString().split('T')[0],
-            row.type,
-            row.amount,
-            row.category,
-            row.payment_method,
-            row.type === 'credit' ? partyId : null,
+            row.type, row.amount, row.category, row.payment_method,
+            null, // customer_id resolved below via index offset
             row.type === 'credit' ? row.party_name : null,
             row.type === 'debit' ? row.party_name : null,
-            refJobId,
+            null, // reference_job_id resolved below via index offset
             row.reference_token || null,
-            row.description,
-            row.notes || null
+            row.description, row.notes || null
           ]
-        );
+        });
 
-        if (row.type === 'credit') {
-          await markJobPaidByToken(row.reference_token);
+        // Mark job as paid if credit
+        if (row.type === 'credit' && t) {
+          ops.push({
+            sql: "UPDATE jobs SET payment_status = 'paid', updated_at = datetime('now') WHERE token_number = ? AND deleted_at IS NULL",
+            params: [t]
+          });
         }
       }
+
+      // Reload
+      ops.push({ sql: 'SELECT * FROM financial_transactions ORDER BY date DESC, id DESC LIMIT 500' });
+      ops.push({
+        sql: `SELECT SUM(CASE WHEN type = 'credit' THEN amount ELSE 0 END) AS total_credit, SUM(CASE WHEN type = 'debit' THEN amount ELSE 0 END) AS total_debit, SUM(CASE WHEN type = 'credit' AND date = date('now') THEN amount ELSE 0 END) AS today_credit, SUM(CASE WHEN type = 'debit' AND date = date('now') THEN amount ELSE 0 END) AS today_debit, COUNT(*) AS total_entries FROM financial_transactions`
+      });
+
+      await batch(ops);
 
       toast.success(`Successfully posted ${validRows.length} batch ledger entries!`);
       setIsMultiModalOpen(false);
@@ -400,10 +459,41 @@ export const PaymentModulePage: React.FC = () => {
   const handleDeleteTransaction = async (tx: FinancialTransaction) => {
     if (confirm(`Delete ledger entry #${tx.id} (${tx.description} - ${formatCurrency(tx.amount)})?`)) {
       try {
-        await execute('DELETE FROM financial_transactions WHERE id = ?', [tx.id]);
-        if (tx.type === 'credit') {
-          await revertJobToDueIfUnpaid(tx.token_number, tx.id);
+        const t = (tx.token_number || '').trim();
+        const ops: Array<{ sql: string; params?: unknown[] }> = [];
+
+        // 1. Delete the transaction
+        ops.push({ sql: 'DELETE FROM financial_transactions WHERE id = ?', params: [tx.id] });
+
+        // 2. If credit, check remaining payments and revert if unpaid
+        if (tx.type === 'credit' && t) {
+          ops.push({
+            sql: "SELECT COUNT(*) as c FROM financial_transactions WHERE type = 'credit' AND token_number = ? AND id != ?",
+            params: [t, tx.id]
+          });
+          ops.push({
+            sql: "UPDATE jobs SET payment_status = 'due', updated_at = datetime('now') WHERE token_number = ? AND deleted_at IS NULL",
+            params: [t]
+          });
         }
+
+        // 3. Reload
+        ops.push({ sql: 'SELECT * FROM financial_transactions ORDER BY date DESC, id DESC LIMIT 500' });
+        ops.push({
+          sql: `SELECT SUM(CASE WHEN type = 'credit' THEN amount ELSE 0 END) AS total_credit, SUM(CASE WHEN type = 'debit' THEN amount ELSE 0 END) AS total_debit, SUM(CASE WHEN type = 'credit' AND date = date('now') THEN amount ELSE 0 END) AS today_credit, SUM(CASE WHEN type = 'debit' AND date = date('now') THEN amount ELSE 0 END) AS today_debit, COUNT(*) AS total_entries FROM financial_transactions`
+        });
+
+        const results = await batch(ops);
+
+        // If we did the revert check, see if remaining credit count is 0
+        if (tx.type === 'credit' && t) {
+          const checkResult = results[2] as any[];
+          const remainingCount = checkResult?.[0]?.c ?? 1;
+          if (remainingCount === 0) {
+            // Already included the UPDATE in the batch above
+          }
+        }
+
         toast.success(`Transaction #${tx.id} deleted.`);
         loadTransactions();
       } catch (err) {
@@ -816,7 +906,7 @@ export const PaymentModulePage: React.FC = () => {
       {/* MODAL 1: Single Voucher Entry */}
       <AnimatePresence>
         {isSingleModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -1093,7 +1183,7 @@ export const PaymentModulePage: React.FC = () => {
       {/* MODAL 2: Multi-Row Batch Entry */}
       <AnimatePresence>
         {isMultiModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}

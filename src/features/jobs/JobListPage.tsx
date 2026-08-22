@@ -79,16 +79,15 @@ export const JobListPage: React.FC = () => {
     }
   };
 
-  // Quick Inline Status Toggles
-  const toggleDeliverStatus = async (job: Job, e: React.MouseEvent) => {
+  // Quick Inline Status Dropdown
+  const updateDeliverStatus = async (job: Job, newStatus: string, e: React.SyntheticEvent) => {
     e.stopPropagation();
-    const newStatus: DeliverStatus = job.deliver_status === 'delivered' ? 'pending' : 'delivered';
     try {
-      await execute('UPDATE jobs SET deliver_status = ?, updated_at = datetime("now") WHERE id = ?', [
+      await execute(`UPDATE jobs SET deliver_status = ?, updated_at = datetime('now') WHERE id = ?`, [
         newStatus,
         job.id
       ]);
-      toast.success(`Job ${job.token_number} delivery set to ${newStatus.toUpperCase()}`);
+      toast.success(`Job ${job.token_number} → ${newStatus.replace('_', ' ').toUpperCase()}`);
       fetchJobs();
     } catch {
       toast.error('Failed to update delivery status.');
@@ -99,7 +98,7 @@ export const JobListPage: React.FC = () => {
     e.stopPropagation();
     if (confirm(`Are you sure you want to soft-delete repair record ${job.token_number}?`)) {
       try {
-        await execute('UPDATE jobs SET deleted_at = datetime("now") WHERE id = ?', [job.id]);
+        await execute(`UPDATE jobs SET deleted_at = datetime('now') WHERE id = ?`, [job.id]);
         toast.success(`Job ${job.token_number} deleted.`);
         fetchJobs();
       } catch {
@@ -207,8 +206,11 @@ export const JobListPage: React.FC = () => {
               className="input-field cursor-pointer"
             >
               <option value="all">Delivery: All</option>
-              <option value="pending">Delivery: PENDING Only</option>
-              <option value="delivered">Delivery: DELIVERED Only</option>
+              <option value="pending">Pending</option>
+              <option value="in_progress">In Progress</option>
+              <option value="in_diagnostics">In Diagnostics</option>
+              <option value="ready">Ready</option>
+              <option value="delivered">Delivered</option>
             </select>
           </div>
 
@@ -342,19 +344,24 @@ export const JobListPage: React.FC = () => {
                         </span>
                       </td>
 
-                      {/* Delivery Status with quick click toggle */}
+                      {/* Delivery Status with inline dropdown */}
                       <td className="py-3.5 px-4">
-                        <button
-                          onClick={(e) => toggleDeliverStatus(job, e)}
-                          title="Click to toggle Pending/Delivered"
-                          className="hover:scale-105 transition-transform cursor-pointer"
-                        >
-                          {overdue ? (
-                            <StatusBadge type="overdue" size="sm" />
-                          ) : (
-                            <StatusBadge type="deliver" status={job.deliver_status} size="sm" />
-                          )}
-                        </button>
+                        {overdue ? (
+                          <StatusBadge type="overdue" size="sm" />
+                        ) : (
+                          <select
+                            value={job.deliver_status}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => updateDeliverStatus(job, e.target.value, e)}
+                            className="text-xs font-bold rounded-full border px-2 py-1 bg-transparent cursor-pointer focus:outline-none focus:ring-2 focus:ring-slate-400/30 dark:focus:ring-slate-500/30"
+                          >
+                            <option value="pending">⏳ Pending</option>
+                            <option value="in_progress">🔧 In Progress</option>
+                            <option value="in_diagnostics">🔍 Diagnostics</option>
+                            <option value="ready">📦 Ready</option>
+                            <option value="delivered">✅ Delivered</option>
+                          </select>
+                        )}
                       </td>
 
                       {/* Row Actions */}

@@ -8,6 +8,7 @@ const MIGRATION_FLAG = 'prodata_native_db_migrated';
 interface DbBridge {
   query: (sql: string, params?: unknown[]) => Promise<unknown[]>;
   execute: (sql: string, params?: unknown[]) => Promise<{ ok: true }>;
+  batch: (ops: Array<{ sql: string; params?: unknown[] }>) => Promise<unknown[]>;
   exportBinary: () => Promise<Uint8Array>;
   importBinary: (bytes: Uint8Array | number[]) => Promise<{ ok: true }>;
   resetProduction: () => Promise<{ ok: true }>;
@@ -108,6 +109,18 @@ export async function query<T = any>(sql: string, params: unknown[] = []): Promi
 export async function execute(sql: string, params: unknown[] = []): Promise<void> {
   await ensureDbReady();
   await bridge().execute(sql, params);
+}
+
+/**
+ * Execute multiple operations in a single IPC round-trip inside a transaction.
+ * Returns an array of results — one per operation (queries return row arrays,
+ * mutations return { changes, lastInsertRowid }).
+ */
+export async function batch(
+  operations: Array<{ sql: string; params?: unknown[] }>
+): Promise<unknown[]> {
+  await ensureDbReady();
+  return bridge().batch(operations);
 }
 
 /**

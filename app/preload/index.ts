@@ -4,6 +4,7 @@ const api = {
   db: {
     query: (sql: string, params?: unknown[]) => ipcRenderer.invoke('db:query', sql, params ?? []),
     execute: (sql: string, params?: unknown[]) => ipcRenderer.invoke('db:execute', sql, params ?? []),
+    batch: (ops: Array<{ sql: string; params?: unknown[] }>) => ipcRenderer.invoke('db:batch', ops),
     exportBinary: () => ipcRenderer.invoke('db:export-binary'),
     importBinary: (bytes: Uint8Array | number[]) => ipcRenderer.invoke('db:import-binary', Array.from(bytes)),
     resetProduction: () => ipcRenderer.invoke('db:reset-production'),

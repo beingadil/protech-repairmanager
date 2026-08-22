@@ -151,7 +151,7 @@ export const AddJobPage: React.FC = () => {
           finalCustomerId = existingCust[0].id;
         } else {
           await execute(
-            'INSERT INTO customers (name, mobile, address, party_type, created_at, updated_at) VALUES (?, ?, ?, ?, datetime("now"), datetime("now"))',
+            `INSERT INTO customers (name, mobile, address, party_type, created_at, updated_at) VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))`,
             [customerName, customerMobile || '03000000000', customerAddress || '', 'customer']
           );
           const newCustRes = await query<{ id: number }>('SELECT last_insert_rowid() as id');
@@ -166,7 +166,7 @@ export const AddJobPage: React.FC = () => {
         `INSERT INTO jobs (
           token_number, customer_id, job_type, serial_no, model, ram, hard, processor,
           symptoms, receive_date, return_date, charges, has_charger, payment_status, deliver_status, notes, reference_token, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime("now"), datetime("now"))`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
         [
           currentToken,
           finalCustomerId,
@@ -197,7 +197,7 @@ export const AddJobPage: React.FC = () => {
           `INSERT INTO financial_transactions (
             date, type, amount, category, payment_method, customer_name,
             token_number, description, notes, created_at, updated_at
-          ) VALUES (?, 'credit', ?, 'repair_income', 'cash', ?, ?, ?, ?, datetime("now"), datetime("now"))`,
+          ) VALUES (?, 'credit', ?, 'repair_income', 'cash', ?, ?, ?, ?, datetime('now'), datetime('now'))`,
           [
             receiveDate,
             safeCharges,
@@ -251,7 +251,7 @@ export const AddJobPage: React.FC = () => {
           finalSupplierId = existingSupplier[0].id;
         } else {
           await execute(
-            'INSERT INTO customers (name, mobile, address, party_type, created_at, updated_at) VALUES (?, ?, ?, ?, datetime("now"), datetime("now"))',
+            `INSERT INTO customers (name, mobile, address, party_type, created_at, updated_at) VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))`,
             [supplierName, supplierMobile || '0300-SUPPLIER', supplierAddress || 'Market Dealer', 'supplier']
           );
           const newSuppRes = await query<{ id: number }>('SELECT last_insert_rowid() as id');
@@ -278,7 +278,7 @@ export const AddJobPage: React.FC = () => {
           `INSERT INTO jobs (
             token_number, customer_id, job_type, serial_no, model, ram, hard, processor,
             symptoms, receive_date, return_date, charges, has_charger, payment_status, deliver_status, notes, created_at, updated_at
-          ) VALUES (?, ?, 'laptop', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime("now"), datetime("now"))`,
+          ) VALUES (?, ?, 'laptop', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
           [
             token,
             finalSupplierId,
@@ -719,34 +719,32 @@ export const AddJobPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Delivery Status Toggle */}
+                  {/* Delivery Status — 5-stage workflow */}
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
                       Initial Delivery Status
                     </label>
-                    <div className="flex items-center gap-2 pt-1">
-                      <button
-                        type="button"
-                        onClick={() => setDeliverStatus('pending')}
-                        className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
-                          deliverStatus === 'pending'
-                            ? 'bg-amber-600 text-white border-amber-600'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
-                        }`}
-                      >
-                        PENDING
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDeliverStatus('delivered')}
-                        className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
-                          deliverStatus === 'delivered'
-                            ? 'bg-slate-900 text-white border-slate-900'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
-                        }`}
-                      >
-                        DELIVERED
-                      </button>
+                    <div className="grid grid-cols-5 gap-1.5 pt-1">
+                      {([
+                        ['pending', 'Pending', 'bg-slate-500', 'border-slate-500'],
+                        ['in_progress', 'In Progress', 'bg-blue-600', 'border-blue-600'],
+                        ['in_diagnostics', 'Diagnostics', 'bg-violet-600', 'border-violet-600'],
+                        ['ready', 'Ready', 'bg-amber-600', 'border-amber-600'],
+                        ['delivered', 'Delivered', 'bg-emerald-600', 'border-emerald-600']
+                      ] as const).map(([val, label, activeBg, activeBorder]) => (
+                        <button
+                          key={val}
+                          type="button"
+                          onClick={() => setDeliverStatus(val as DeliverStatus)}
+                          className={`py-1.5 px-1 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer whitespace-nowrap ${
+                            deliverStatus === val
+                              ? `${activeBg} text-white border-${activeBorder}`
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
                     </div>
                   </div>
                 </div>

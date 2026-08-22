@@ -98,7 +98,7 @@ export const EditJobPage: React.FC = () => {
 
     try {
       // Update customer info
-      await execute('UPDATE customers SET name = ?, mobile = ?, address = ?, updated_at = datetime("now") WHERE id = ?', [
+      await execute(`UPDATE customers SET name = ?, mobile = ?, address = ?, updated_at = datetime('now') WHERE id = ?`, [
         customerName,
         customerMobile,
         customerAddress,
@@ -110,7 +110,7 @@ export const EditJobPage: React.FC = () => {
         `UPDATE jobs SET
           job_type = ?, serial_no = ?, model = ?, ram = ?, hard = ?, processor = ?,
           symptoms = ?, receive_date = ?, return_date = ?, charges = ?, has_charger = ?,
-          payment_status = ?, deliver_status = ?, notes = ?, updated_at = datetime("now")
+          payment_status = ?, deliver_status = ?, notes = ?, updated_at = datetime('now')
          WHERE id = ?`,
         [
           jobType,
@@ -365,25 +365,27 @@ export const EditJobPage: React.FC = () => {
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
                     Delivery Status
                   </label>
-                  <div className="flex items-center gap-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => setDeliverStatus('pending')}
-                      className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold border ${
-                        deliverStatus === 'pending' ? 'bg-amber-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                      }`}
-                    >
-                      PENDING
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDeliverStatus('delivered')}
-                      className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold border ${
-                        deliverStatus === 'delivered' ? 'bg-slate-900 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                      }`}
-                    >
-                      DELIVERED
-                    </button>
+                  <div className="grid grid-cols-5 gap-1.5 pt-1">
+                    {([
+                      ['pending', 'Pending', 'bg-slate-500'],
+                      ['in_progress', 'In Progress', 'bg-blue-600'],
+                      ['in_diagnostics', 'Diagnostics', 'bg-violet-600'],
+                      ['ready', 'Ready', 'bg-amber-600'],
+                      ['delivered', 'Delivered', 'bg-emerald-600']
+                    ] as const).map(([val, label, activeBg]) => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => setDeliverStatus(val as DeliverStatus)}
+                        className={`py-1.5 px-1 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer whitespace-nowrap ${
+                          deliverStatus === val
+                            ? `${activeBg} text-white`
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>

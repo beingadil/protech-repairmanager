@@ -155,7 +155,7 @@ export const EnhancedCustomerSupplierSelect: React.FC<EnhancedCustomerSupplierSe
     setIsSavingNew(true);
     try {
       await execute(
-        'INSERT INTO customers (name, mobile, address, party_type, created_at, updated_at) VALUES (?, ?, ?, ?, datetime("now"), datetime("now"))',
+        `INSERT INTO customers (name, mobile, address, party_type, created_at, updated_at) VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))`,
         [newName.trim(), newMobile.trim() || '0300-0000000', newAddress.trim() || '', newPartyType]
       );
 

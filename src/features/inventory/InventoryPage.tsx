@@ -808,7 +808,7 @@ export const InventoryPage: React.FC = () => {
       {/* Add / Edit Part Modal */}
       <AnimatePresence>
         {isItemModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 ">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -993,7 +993,7 @@ export const InventoryPage: React.FC = () => {
       {/* Stock Adjust / Restock Modal */}
       <AnimatePresence>
         {isStockModalOpen && stockItem && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 ">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
