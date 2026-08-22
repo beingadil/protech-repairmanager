@@ -66,14 +66,35 @@ function createWindow(): void {
     mainWindow.webContents.on('did-finish-load', () => {
       smokeLines.push('did-finish-load');
       // Exercise the native SQLite bridge end-to-end: renderer preload ->
-      // IPC -> main-process better-sqlite3 -> real query result.
+      // IPC -> main-process better-sqlite3 -> real query result, then a
+      // write+read benchmark at repair-shop data scale.
       mainWindow?.webContents
         .executeJavaScript(
-          `window.prodata.db.query('SELECT 42 AS v')
-            .then(r => JSON.stringify({dbOk:true, v:r && r[0] ? r[0].v : null}))
-            .catch(e => JSON.stringify({dbOk:false, err:String(e)}))`
+          `(async () => {
+            try {
+              const t0 = performance.now();
+              const r = await window.prodata.db.query('SELECT 42 AS v');
+              const pingMs = +(performance.now() - t0).toFixed(2);
+              await window.prodata.db.execute('CREATE TABLE IF NOT EXISTS __bench (id INTEGER PRIMARY KEY AUTOINCREMENT, token TEXT, charges REAL, status TEXT)');
+              const t1 = performance.now();
+              for (let i = 0; i < 500; i++) {
+                await window.prodata.db.execute('INSERT INTO __bench (token, charges, status) VALUES (?, ?, ?)', ['PTS-' + i, 1000 + i, i % 2 ? 'paid' : 'due']);
+              }
+              const insertMs = +(performance.now() - t1).toFixed(1);
+              const t2 = performance.now();
+              const agg = await window.prodata.db.query("SELECT status, COUNT(*) AS n, SUM(charges) AS total FROM __bench GROUP BY status");
+              const aggMs = +(performance.now() - t2).toFixed(1);
+              const joinMsT = performance.now();
+              await window.prodata.db.query('SELECT b.status, COUNT(*) AS n FROM __bench b LEFT JOIN __bench c ON c.id = b.id GROUP BY b.status');
+              const joinMs = +(performance.now() - joinMsT).toFixed(1);
+              await window.prodata.db.execute('DROP TABLE __bench');
+              return JSON.stringify({ dbOk: true, v: r && r[0] ? r[0].v : null, pingMs, insert500Ms: insertMs, perInsertMs: +(insertMs / 500).toFixed(3), aggMs, selfJoinMs: joinMs, aggRows: agg.length });
+            } catch (e) {
+              return JSON.stringify({ dbOk: false, err: String(e) });
+            }
+          })()`
         )
-        .then((res) => smokeLines.push(`db-check: ${res}`))
+        .then((res) => smokeLines.push(`db-bench: ${res}`))
         .catch((e) => smokeLines.push(`db-check-error: ${String(e)}`));
     });
     mainWindow.webContents.on('did-fail-load', (_e, code, desc) => {

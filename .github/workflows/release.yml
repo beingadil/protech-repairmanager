@@ -31,7 +31,24 @@ jobs:
       - name: Build renderer + electron shell
         run: npm run build:electron
 
-      - name: Build & publish installer (NSIS + portable) to GitHub Releases
+      # Pre-create the release so electron-builder's publisher only uploads
+      # assets — its create-release call can race and 422 (v1.1.3 failure).
+      - name: Ensure GitHub release exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: |
+          $headers = @{ Authorization = "Bearer $env:GH_TOKEN"; Accept = 'application/vnd.github+json' }
+          $body = @{ tag_name = $env:GITHUB_REF_NAME; name = $env:GITHUB_REF_NAME; draft = $false; prerelease = $false } | ConvertTo-Json
+          try {
+            Invoke-RestMethod -Uri "https://api.github.com/repos/$env:GITHUB_REPOSITORY/releases" -Method Post -Headers $headers -ContentType 'application/json' -Body $body | Out-Null
+            Write-Host "Release created"
+          } catch {
+            $code = $_.Exception.Response.StatusCode.value__
+            if ($code -eq 422) { Write-Host "Release already exists — continuing" } else { throw }
+          }
+
+      - name: Build & publish installer to GitHub Releases
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx electron-builder --win --publish always
