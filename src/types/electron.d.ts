@@ -1,6 +1,11 @@
 export interface ProdataBridge {
-  sqlWasm: {
-    get(): Promise<number[] | null>;
+  db: {
+    query(sql: string, params?: unknown[]): Promise<unknown[]>;
+    execute(sql: string, params?: unknown[]): Promise<{ ok: true }>;
+    exportBinary(): Promise<Uint8Array>;
+    importBinary(bytes: Uint8Array | number[]): Promise<{ ok: true }>;
+    resetProduction(): Promise<{ ok: true }>;
+    getPath(): Promise<string>;
   };
   app: {
     getUserDataPath(): Promise<string>;

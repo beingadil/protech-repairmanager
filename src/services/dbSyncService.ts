@@ -23,7 +23,7 @@ function normalizePath(basePath: string, fileName: string): string {
 }
 
 /**
- * Saves the sql.js Uint8Array database binary file directly to local Google Drive directory
+ * Saves the native SQLite database file directly to local Google Drive directory
  */
 export async function syncDatabaseToGoogleDrive(
   dbBytes: Uint8Array,

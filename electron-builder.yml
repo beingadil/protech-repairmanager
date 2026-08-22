@@ -8,6 +8,9 @@ files:
   - "!**/*.map"
 asar: true
 npmRebuild: true
+# better-sqlite3 ships a native .node addon — must live outside the asar.
+asarUnpack:
+  - "node_modules/better-sqlite3/**"
 
 # Auto-update feed (electron-updater reads app-update.yml generated from this).
 # GitHub Releases provider: pushes latest.yml + installers to a release when

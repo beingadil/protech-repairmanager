@@ -56,7 +56,7 @@ export const SyncSettingsComponent: React.FC = () => {
     const toastId = toast.loading('Exporting database to Google Drive...');
 
     try {
-      // 1. Export database binary from sql.js memory instance
+      // 1. Export native SQLite database file from the main process
       const dbBytes = await exportDatabaseBinary();
 
       // 2. Write file directly to local Google Drive folder path
@@ -108,7 +108,7 @@ export const SyncSettingsComponent: React.FC = () => {
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Directly saves sql.js database binary (<code className="text-slate-700 dark:text-slate-300 font-mono">ProDataRepairManager.db</code>) to local Google Drive
+              Directly saves native SQLite database file (<code className="text-slate-700 dark:text-slate-300 font-mono">ProDataRepairManager.db</code>) to local Google Drive
             </p>
           </div>
         </div>

@@ -1,8 +1,13 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
 const api = {
-  sqlWasm: {
-    get: () => ipcRenderer.invoke('bridge:get-sql-wasm')
+  db: {
+    query: (sql: string, params?: unknown[]) => ipcRenderer.invoke('db:query', sql, params ?? []),
+    execute: (sql: string, params?: unknown[]) => ipcRenderer.invoke('db:execute', sql, params ?? []),
+    exportBinary: () => ipcRenderer.invoke('db:export-binary'),
+    importBinary: (bytes: Uint8Array | number[]) => ipcRenderer.invoke('db:import-binary', Array.from(bytes)),
+    resetProduction: () => ipcRenderer.invoke('db:reset-production'),
+    getPath: () => ipcRenderer.invoke('db:get-path')
   },
   app: {
     getUserDataPath: () => ipcRenderer.invoke('app:getUserDataPath')

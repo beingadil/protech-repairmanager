@@ -65,21 +65,16 @@ function createWindow(): void {
     });
     mainWindow.webContents.on('did-finish-load', () => {
       smokeLines.push('did-finish-load');
-      // Exercise the sql.js WASM bridge AND verify Chromium can actually
-      // compile the WASM under the production CSP (needs 'wasm-unsafe-eval').
+      // Exercise the native SQLite bridge end-to-end: renderer preload ->
+      // IPC -> main-process better-sqlite3 -> real query result.
       mainWindow?.webContents
         .executeJavaScript(
-          `window.prodata.sqlWasm.get()
-            .then(b => {
-              if (!Array.isArray(b) || b.length === 0) return JSON.stringify({wasmBridgeOk:false});
-              return WebAssembly.compile(new Uint8Array(b))
-                .then(() => JSON.stringify({wasmBridgeOk:true, compileOk:true, bytes:b.length}))
-                .catch(e => JSON.stringify({wasmBridgeOk:true, compileOk:false, err:String(e), name:e && e.name}));
-            })
-            .catch(e => JSON.stringify({wasmBridgeOk:false, err:String(e)}))`
+          `window.prodata.db.query('SELECT 42 AS v')
+            .then(r => JSON.stringify({dbOk:true, v:r && r[0] ? r[0].v : null}))
+            .catch(e => JSON.stringify({dbOk:false, err:String(e)}))`
         )
-        .then((res) => smokeLines.push(`sql-wasm-check: ${res}`))
-        .catch((e) => smokeLines.push(`sql-wasm-check-error: ${String(e)}`));
+        .then((res) => smokeLines.push(`db-check: ${res}`))
+        .catch((e) => smokeLines.push(`db-check-error: ${String(e)}`));
     });
     mainWindow.webContents.on('did-fail-load', (_e, code, desc) => {
       smokeLines.push(`did-fail-load code=${code} desc=${desc}`);
