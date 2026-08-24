@@ -71,7 +71,7 @@ export const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
     <div className="space-y-4">
       {/* Customer Name Autocomplete */}
       <div className="relative">
-        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+        <label className="form-label">
           Customer Name *
         </label>
         <div className="relative">
@@ -119,7 +119,7 @@ export const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
       {/* Mobile & Address fields */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+          <label className="form-label">
             Mobile Number *
           </label>
           <div className="relative">
@@ -136,7 +136,7 @@ export const CustomerAutocomplete: React.FC<CustomerAutocompleteProps> = ({
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+          <label className="form-label">
             Address / City
           </label>
           <div className="relative">

@@ -283,7 +283,7 @@ export const SettingsPage: React.FC = () => {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight font-heading">
+          <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight font-heading">
             System & Shop Settings
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -319,7 +319,7 @@ export const SettingsPage: React.FC = () => {
               onClick={() => setActiveTab(tab.id as SettingsTab)}
               className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
                 isActive
-                  ? 'bg-slate-600 text-white shadow-xs'
+                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60'
               }`}
             >
@@ -327,7 +327,7 @@ export const SettingsPage: React.FC = () => {
               <span>{tab.label}</span>
               {tab.badge !== undefined && (
                 <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-                  isActive ? 'bg-slate-800 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                  isActive ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
                 }`}>
                   {tab.badge}
                 </span>
@@ -347,7 +347,7 @@ export const SettingsPage: React.FC = () => {
 
             {/* Logo Uploader & Preview */}
             <div className="p-4 bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-3">
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+              <label className="form-label">
                 Workshop Logo & Brand Icon
               </label>
 
@@ -406,7 +406,7 @@ export const SettingsPage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                <label className="form-label">
                   Workshop Business Name *
                 </label>
                 <input
@@ -420,7 +420,7 @@ export const SettingsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                <label className="form-label">
                   Slogan / Tagline
                 </label>
                 <input
@@ -433,7 +433,7 @@ export const SettingsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                <label className="form-label">
                   Primary Mobile / Phone *
                 </label>
                 <input
@@ -447,7 +447,7 @@ export const SettingsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                <label className="form-label">
                   WhatsApp Contact Number
                 </label>
                 <input
@@ -460,7 +460,7 @@ export const SettingsPage: React.FC = () => {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                <label className="form-label">
                   Official Email Address
                 </label>
                 <input
@@ -473,7 +473,7 @@ export const SettingsPage: React.FC = () => {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                <label className="form-label">
                   Physical Workshop Address (Printed on Receipts)
                 </label>
                 <input
@@ -525,7 +525,7 @@ export const SettingsPage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                <label className="form-label">
                   Default Thermal Paper Format
                 </label>
                 <select
@@ -540,7 +540,7 @@ export const SettingsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                <label className="form-label">
                   Currency Symbol / Code
                 </label>
                 <input
@@ -553,7 +553,7 @@ export const SettingsPage: React.FC = () => {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                <label className="form-label">
                   Receipt Header Note (Appears below shop name)
                 </label>
                 <input
@@ -566,7 +566,7 @@ export const SettingsPage: React.FC = () => {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                <label className="form-label">
                   Receipt Footer Notice (Appears above QR / Signature)
                 </label>
                 <input
@@ -579,7 +579,7 @@ export const SettingsPage: React.FC = () => {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                <label className="form-label">
                   Terms & Conditions Printed on Receipts
                 </label>
                 <textarea
@@ -634,7 +634,7 @@ export const SettingsPage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                <label className="form-label">
                   Default Service Repair Charges ({currencySymbol})
                 </label>
                 <input
@@ -647,7 +647,7 @@ export const SettingsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                <label className="form-label">
                   Token Code Sequence Prefix
                 </label>
                 <input
@@ -660,7 +660,7 @@ export const SettingsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                <label className="form-label">
                   Default Standard Warranty Period (Days)
                 </label>
                 <input
@@ -673,7 +673,7 @@ export const SettingsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                <label className="form-label">
                   Estimated Repair Turnaround (Days)
                 </label>
                 <input
@@ -774,7 +774,7 @@ export const SettingsPage: React.FC = () => {
               </div>
 
               <div className="flex justify-end pt-1">
-                <button type="submit" className="btn-primary text-xs py-2 px-4 cursor-pointer">
+                <button type="submit" className="btn-primary cursor-pointer">
                   <UserPlus className="w-4 h-4" />
                   <span>Register Staff Member</span>
                 </button>
@@ -890,7 +890,7 @@ export const SettingsPage: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  <label className="form-label">
                     Account SID
                   </label>
                   <input
@@ -903,7 +903,7 @@ export const SettingsPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  <label className="form-label">
                     Auth Token
                   </label>
                   <input
@@ -916,7 +916,7 @@ export const SettingsPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  <label className="form-label">
                     Sender Phone / Shortcode
                   </label>
                   <input
@@ -1051,7 +1051,7 @@ export const SettingsPage: React.FC = () => {
 
               <form onSubmit={handlePasswordChangeSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
+                  <label className="form-label.5">
                     New Access Password *
                   </label>
                   <input

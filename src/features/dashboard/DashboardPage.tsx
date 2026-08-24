@@ -225,8 +225,6 @@ export const DashboardPage: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* Total Systems */}
         <motion.div
-          whileHover={{ y: -3 }}
-          transition={{ duration: 0.15 }}
           onClick={() => navigate('/jobs')}
           className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800/90 rounded-2xl p-5 shadow-xs hover:border-blue-500 transition-all cursor-pointer group"
         >
@@ -245,8 +243,6 @@ export const DashboardPage: React.FC = () => {
 
         {/* Active Repairs */}
         <motion.div
-          whileHover={{ y: -3 }}
-          transition={{ duration: 0.15 }}
           onClick={() => navigate('/jobs?deliver_status=pending')}
           className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800/90 rounded-2xl p-5 shadow-xs hover:border-amber-500 transition-all cursor-pointer group"
         >
@@ -265,8 +261,6 @@ export const DashboardPage: React.FC = () => {
 
         {/* Delivered Jobs */}
         <motion.div
-          whileHover={{ y: -3 }}
-          transition={{ duration: 0.15 }}
           onClick={() => navigate('/jobs?deliver_status=delivered')}
           className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800/90 rounded-2xl p-5 shadow-xs hover:border-emerald-500 transition-all cursor-pointer group"
         >
@@ -285,8 +279,6 @@ export const DashboardPage: React.FC = () => {
 
         {/* Stock Inventory KPI Card */}
         <motion.div
-          whileHover={{ y: -3 }}
-          transition={{ duration: 0.15 }}
           onClick={() => navigate('/inventory')}
           className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800/90 rounded-2xl p-5 shadow-xs hover:border-purple-500 transition-all cursor-pointer group"
         >
@@ -314,8 +306,6 @@ export const DashboardPage: React.FC = () => {
 
         {/* Total Revenue */}
         <motion.div
-          whileHover={{ y: -3 }}
-          transition={{ duration: 0.15 }}
           onClick={() => navigate('/analytics')}
           className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800/90 rounded-2xl p-5 shadow-xs hover:border-indigo-500 transition-all cursor-pointer group"
         >
@@ -337,7 +327,7 @@ export const DashboardPage: React.FC = () => {
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Weekly Revenue Trend Area Chart */}
-        <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs">
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-base font-bold text-slate-900 dark:text-white">Revenue Trend (Past 7 Days)</h3>
@@ -372,7 +362,7 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* Repair Status Donut Chart */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col justify-between">
+        <div className="card-container flex flex-col justify-between">
           <div>
             <h3 className="text-base font-bold text-slate-900 dark:text-white">Delivery Distribution</h3>
             <p className="text-xs text-slate-500">Completed vs In-progress systems</p>
@@ -397,7 +387,7 @@ export const DashboardPage: React.FC = () => {
               </PieChart>
             </ResponsiveContainer>
             <div className="absolute text-center">
-              <span className="text-2xl font-black text-slate-900 dark:text-white">{stats.total_jobs}</span>
+              <span className="text-xl font-black text-slate-900 dark:text-white">{stats.total_jobs}</span>
               <p className="text-[10px] uppercase font-bold text-slate-500">Total Jobs</p>
             </div>
           </div>
@@ -422,7 +412,7 @@ export const DashboardPage: React.FC = () => {
       {/* Overdue Jobs Alert & Recent Repairs */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Overdue Jobs Alert Widget */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs">
+        <div className="card-container">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <div className="p-1.5 bg-amber-500/15 text-amber-600 rounded-lg">
@@ -472,7 +462,7 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* Recent Repair Queue */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs">
+        <div className="card-container">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-base font-bold text-slate-900 dark:text-white">Recent Repair Intakes</h3>

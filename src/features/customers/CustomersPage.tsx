@@ -348,7 +348,7 @@ export const CustomersPage: React.FC = () => {
           <div className="col-span-full py-12 text-center text-slate-400">Loading directory records...</div>
         ) : filtered.length === 0 ? (
           <div className="col-span-full py-12 text-center text-slate-400">
-            No customer or supplier records found matching search.
+            No customers or suppliers found. Click "Add Customer / Supplier" to get started.
           </div>
         ) : (
           visibleParties.map((c) => {
@@ -418,10 +418,10 @@ export const CustomersPage: React.FC = () => {
                   </p>
                 )}
 
-                {/* Metrics Badges: Total Laptops & Pending Laptops */}
+                {/* Metrics Badges: Total Devices & Pending Laptops */}
                 <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                   <div className="bg-slate-50 dark:bg-slate-800/60 p-2 rounded-xl text-center">
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Total Laptops</span>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Total Devices</span>
                     <span className="font-black text-sm text-slate-900 dark:text-white font-heading">
                       {totalCount} Units
                     </span>
@@ -434,7 +434,7 @@ export const CustomersPage: React.FC = () => {
                         : 'bg-slate-50 dark:bg-slate-800/60'
                     }`}
                   >
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Pending In Shop</span>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Pending</span>
                     <span
                       className={`font-black text-sm font-heading ${
                         pendingCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-900 dark:text-white'
@@ -540,7 +540,7 @@ export const CustomersPage: React.FC = () => {
                 {/* KPI Summary Cards */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
                   <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-center">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Total Laptops</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Total Devices</span>
                     <span className="text-lg font-black text-slate-900 dark:text-white font-heading">
                       {partyJobs.length}
                     </span>
@@ -548,7 +548,7 @@ export const CustomersPage: React.FC = () => {
 
                   <div className="bg-amber-50 dark:bg-amber-950/40 p-3 rounded-xl border border-amber-200 dark:border-amber-900/60 text-center">
                     <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase block">
-                      Pending In Shop
+                      Pending
                     </span>
                     <span className="text-lg font-black text-amber-600 dark:text-amber-400 font-heading">
                       {partyJobs.filter((j) => j.deliver_status === 'pending').length}
@@ -605,7 +605,7 @@ export const CustomersPage: React.FC = () => {
                       setPaymentType(selectedParty.party_type === 'supplier' ? 'debit' : 'credit');
                       setIsPaymentModalOpen(true);
                     }}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer"
+                    className="btn-success py-1.5 px-3 text-xs cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Post Voucher</span>
@@ -630,7 +630,7 @@ export const CustomersPage: React.FC = () => {
                           <div
                             key={job.id}
                             onClick={() => navigate(`/jobs/${job.id}`)}
-                            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs hover:border-slate-400 dark:hover:border-slate-500 transition-colors cursor-pointer space-y-2"
+                            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 card-container p-4 hover:border-slate-400 dark:hover:border-slate-500 cursor-pointer space-y-2"
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
@@ -676,7 +676,7 @@ export const CustomersPage: React.FC = () => {
                       {partyTransactions.map((tx) => (
                         <div
                           key={tx.id}
-                          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 shadow-xs flex items-center justify-between text-xs"
+                          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 shadow-xs flex items-center justify-between text-xs"
                         >
                           <div>
                             <div className="flex items-center gap-2">
@@ -748,7 +748,7 @@ export const CustomersPage: React.FC = () => {
 
               <form onSubmit={handleAddParty} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                  <label className="form-label">
                     Party Type *
                   </label>
                   <div className="grid grid-cols-2 gap-3">
@@ -779,7 +779,7 @@ export const CustomersPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  <label className="form-label">
                     {newPartyType === 'supplier' ? 'Supplier / Dealer Name *' : 'Customer Name *'}
                   </label>
                   <input
@@ -793,7 +793,7 @@ export const CustomersPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  <label className="form-label">
                     Mobile Phone
                   </label>
                   <input
@@ -806,7 +806,7 @@ export const CustomersPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  <label className="form-label">
                     Address / Market Location
                   </label>
                   <input
@@ -857,7 +857,7 @@ export const CustomersPage: React.FC = () => {
 
               <form onSubmit={handleQuickPaymentSubmit} className="space-y-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  <label className="form-label">
                     Amount (PKR) *
                   </label>
                   <input
@@ -872,7 +872,7 @@ export const CustomersPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  <label className="form-label">
                     Description
                   </label>
                   <input

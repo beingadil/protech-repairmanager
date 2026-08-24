@@ -534,7 +534,7 @@ export const AddJobPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                    <label className="form-label">
                       Brand & Model *
                     </label>
                     <input
@@ -548,7 +548,7 @@ export const AddJobPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                    <label className="form-label">
                       Serial / Tag Number
                     </label>
                     <input
@@ -561,7 +561,7 @@ export const AddJobPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                    <label className="form-label">
                       RAM Memory
                     </label>
                     <input
@@ -574,7 +574,7 @@ export const AddJobPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                    <label className="form-label">
                       Storage / SSD / HDD
                     </label>
                     <input
@@ -587,7 +587,7 @@ export const AddJobPage: React.FC = () => {
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                    <label className="form-label">
                       Processor / CPU
                     </label>
                     <input
@@ -649,7 +649,7 @@ export const AddJobPage: React.FC = () => {
                   />
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                    <label className="form-label">
                       Repair Charges (PKR)
                     </label>
                     <input
@@ -664,7 +664,7 @@ export const AddJobPage: React.FC = () => {
 
                   {/* Charger Included Toggle */}
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                    <label className="form-label">
                       Charger / Adapter Included?
                     </label>
                     <div className="flex items-center gap-2 pt-1">
@@ -695,7 +695,7 @@ export const AddJobPage: React.FC = () => {
 
                   {/* Payment Status Toggle */}
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                    <label className="form-label">
                       Initial Payment Status
                     </label>
                     <div className="grid grid-cols-3 gap-2 pt-1">
@@ -737,30 +737,30 @@ export const AddJobPage: React.FC = () => {
 
                   {/* Delivery Status — 5-stage workflow */}
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                    <label className="form-label">
                       Initial Delivery Status
                     </label>
                     <div className="grid grid-cols-5 gap-1.5 pt-1">
                       {([
-                        ['pending', 'Pending', 'bg-slate-500', 'border-slate-500'],
-                        ['in_progress', 'In Progress', 'bg-blue-600', 'border-blue-600'],
-                        ['in_diagnostics', 'Diagnostics', 'bg-violet-600', 'border-violet-600'],
-                        ['ready', 'Ready', 'bg-amber-600', 'border-amber-600'],
-                        ['delivered', 'Delivered', 'bg-emerald-600', 'border-emerald-600']
-                      ] as const).map(([val, label, activeBg, activeBorder]) => (
-                        <button
-                          key={val}
-                          type="button"
-                          onClick={() => setDeliverStatus(val as DeliverStatus)}
-                          className={`py-1.5 px-1 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer whitespace-nowrap ${
-                            deliverStatus === val
-                              ? `${activeBg} text-white border-${activeBorder}`
-                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
-                          }`}
-                        >
-                          {label}
-                        </button>
-                      ))}
+                          ['pending', 'Pending', 'bg-slate-500 border-slate-500'],
+                          ['in_progress', 'In Progress', 'bg-blue-600 border-blue-600'],
+                          ['in_diagnostics', 'Diagnostics', 'bg-violet-600 border-violet-600'],
+                          ['ready', 'Ready', 'bg-amber-600 border-amber-600'],
+                          ['delivered', 'Delivered', 'bg-emerald-600 border-emerald-600']
+                        ] as const).map(([val, label, activeClasses]) => (
+                          <button
+                            key={val}
+                            type="button"
+                            onClick={() => setDeliverStatus(val as DeliverStatus)}
+                            className={`py-1.5 px-1 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer whitespace-nowrap ${
+                              deliverStatus === val
+                                ? `${activeClasses} text-white`
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
                     </div>
                   </div>
                 </div>
@@ -832,7 +832,7 @@ export const AddJobPage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                <label className="form-label">
                   Receive Date
                 </label>
                 <input
@@ -844,7 +844,7 @@ export const AddJobPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                <label className="form-label">
                   Target Return Date
                 </label>
                 <input

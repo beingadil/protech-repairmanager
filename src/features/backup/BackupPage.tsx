@@ -81,7 +81,7 @@ export const BackupPage: React.FC = () => {
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       <div>
-        <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Database Backup & Restore</h1>
+        <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Database Backup & Restore</h1>
         <p className="text-xs text-slate-500">Protect shop repair data with instant export, local USB backups, and database restores</p>
       </div>
 
@@ -91,7 +91,7 @@ export const BackupPage: React.FC = () => {
       {/* Action Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {/* Export Backup Card */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-xs space-y-4">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs space-y-4">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-slate-50 dark:bg-slate-800 text-slate-600 rounded-xl">
               <Download className="w-6 h-6" />
@@ -109,7 +109,7 @@ export const BackupPage: React.FC = () => {
           <button
             onClick={handleManualBackup}
             disabled={isExporting}
-            className="w-full py-2.5 px-4 bg-slate-600 hover:bg-slate-500 text-white rounded-xl text-xs font-bold shadow-md transition-colors flex items-center justify-center gap-2"
+            className="btn-primary w-full py-2.5"
           >
             <Download className="w-4 h-4" />
             <span>{isExporting ? 'Exporting...' : 'Export Backup File (.db)'}</span>
@@ -132,7 +132,7 @@ export const BackupPage: React.FC = () => {
             Note: This action will overwrite current in-memory database records with the selected file.
           </p>
 
-          <label className="w-full py-2.5 px-4 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer">
+          <label className="btn-success w-full py-2.5 cursor-pointer">
             <Upload className="w-4 h-4" />
             <span>Select .db Backup File</span>
             <input type="file" accept=".db,.sqlite" onChange={handleRestoreFile} className="hidden" />
@@ -141,13 +141,13 @@ export const BackupPage: React.FC = () => {
       </div>
 
       {/* Backup Logs */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs space-y-4">
+      <div className="card-container space-y-4">
         <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-2">
           Backup History Log
         </h3>
 
         {logs.length === 0 ? (
-          <p className="text-xs text-slate-400 py-4 text-center">No previous backup logs recorded.</p>
+          <div className="py-8 text-center text-slate-400"><DatabaseBackup className="w-8 h-8 mx-auto mb-2 opacity-40" /><p className="text-xs">No previous backup logs recorded.</p></div>
         ) : (
           <div className="space-y-2">
             {logs.map((log) => (

@@ -353,7 +353,7 @@ export const GeneralLedgerPage: React.FC = () => {
               ) : filteredParties.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-slate-400">
-                    No parties found matching the filter criteria.
+                    No parties with ledger activity found.
                   </td>
                 </tr>
               ) : (

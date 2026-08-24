@@ -412,7 +412,7 @@ export const InventoryPage: React.FC = () => {
             <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider block">
               Low Stock Alert
             </span>
-            <span className="text-2xl font-black text-amber-600 dark:text-amber-400 font-mono mt-1 block flex items-center gap-1.5">
+            <span className="text-xl font-black text-amber-600 dark:text-amber-400 font-mono mt-1 block flex items-center gap-1.5">
               {stats.low_stock_count}
               {stats.low_stock_count > 0 && (
                 <span className="text-[10px] bg-amber-500/20 border border-amber-500/30 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded font-bold uppercase">
@@ -435,7 +435,7 @@ export const InventoryPage: React.FC = () => {
             <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider block">
               Out of Stock
             </span>
-            <span className="text-2xl font-black text-rose-600 dark:text-rose-400 font-mono mt-1 block">
+            <span className="text-xl font-black text-rose-600 dark:text-rose-400 font-mono mt-1 block">
               {stats.out_of_stock_count}
             </span>
             <span className="text-[11px] text-slate-500 mt-0.5 block">

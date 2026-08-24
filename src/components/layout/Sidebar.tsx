@@ -113,7 +113,7 @@ export const Sidebar: React.FC = () => {
                 className={({ isActive }) =>
                   `flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                     isActive
-                      ? 'bg-slate-900/5 dark:bg-white/10 text-slate-900 dark:text-white font-bold border-l-2 border-slate-900 dark:border-white shadow-2xs'
+                      ? 'bg-slate-900/8 dark:bg-white/10 text-slate-900 dark:text-white font-bold'
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/90 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100 font-medium'
                   }`
                 }
@@ -160,7 +160,7 @@ export const Sidebar: React.FC = () => {
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               SQLite DB Online
             </span>
-            <span className="font-mono text-[9px]">v1.0.0</span>
+            <span className="font-mono text-[9px]">v1.1.5</span>
           </div>
         )}
       </div>

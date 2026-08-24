@@ -142,7 +142,7 @@ export const EnhancedDatePicker: React.FC<EnhancedDatePickerProps> = ({
   return (
     <div className="relative space-y-1.5" ref={containerRef}>
       <div className="flex items-center justify-between">
-        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+        <label className="form-label">
           {label} {required && <span className="text-rose-500">*</span>}
         </label>
         {relativeTag && (

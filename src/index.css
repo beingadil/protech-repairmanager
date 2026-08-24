@@ -22,7 +22,6 @@
     font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
   }
 
-  /* Custom Professional Scrollbar for Light and Dark themes */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -38,45 +37,132 @@
 }
 
 @layer components {
-  /* Software Button Design Tokens - Neutral primary, bordered secondary */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 active:bg-slate-950 dark:bg-slate-100 dark:hover:bg-slate-200 dark:active:bg-slate-300 dark:text-slate-900 text-white text-xs font-semibold rounded-lg shadow-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-slate-900 hover:bg-slate-800 active:bg-slate-950 dark:bg-slate-100 dark:hover:bg-slate-200 dark:active:bg-slate-300 dark:text-slate-900 text-white shadow-xs;
   }
 
   .btn-success {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg shadow-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-xs;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 bg-transparent hover:bg-slate-50 dark:hover:bg-slate-800/60 active:bg-slate-100 dark:active:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 text-xs font-semibold rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-transparent hover:bg-slate-50 dark:hover:bg-slate-800/60 active:bg-slate-100 dark:active:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700;
   }
 
   .btn-danger {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 dark:bg-rose-600 dark:hover:bg-rose-500 text-white text-xs font-semibold rounded-lg shadow-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white shadow-xs;
   }
 
   .btn-ghost {
-    @apply p-2 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100/80 dark:hover:bg-slate-800/80 rounded-lg transition-colors cursor-pointer inline-flex items-center justify-center;
+    @apply p-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100/80 dark:hover:bg-slate-800/80 rounded-xl transition-colors cursor-pointer inline-flex items-center justify-center;
   }
 
-  /* Form Field Tokens */
   .input-field {
-    @apply w-full px-3.5 py-2.5 text-sm bg-white dark:bg-slate-900 border border-slate-300/80 dark:border-slate-700/80 rounded-lg text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 focus:border-slate-900 dark:focus:border-slate-100 outline-none transition-all;
+    @apply w-full px-3.5 py-2.5 text-sm bg-white dark:bg-slate-900 border border-slate-300/80 dark:border-slate-700/80 rounded-xl text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:ring-blue-400/20 dark:focus:border-blue-400 outline-none transition-all;
   }
 
-  /* ProTech Card Containers - uniform 12px radius */
+  .form-label {
+    @apply block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5;
+  }
+
+  .form-group {
+    @apply space-y-1.5;
+  }
+
+  .card {
+    @apply bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800/90 rounded-2xl shadow-xs transition-colors duration-150;
+  }
+
   .card-container {
-    @apply bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800/90 rounded-xl p-5 shadow-sm dark:shadow-md transition-colors duration-150;
+    @apply bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800/90 rounded-2xl p-5 shadow-xs transition-colors duration-150;
   }
 
-  /* Muted uppercase field label - professional typography standard */
+  .card-interactive {
+    @apply bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800/90 rounded-2xl p-5 shadow-xs hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200 cursor-pointer;
+  }
+
+  .card-header {
+    @apply text-sm font-bold text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-3;
+  }
+
+  .tabs {
+    @apply flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl;
+  }
+
+  .tab {
+    @apply flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer text-slate-500 hover:text-slate-900 dark:hover:text-white;
+  }
+
+  .tab-active {
+    @apply flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs;
+  }
+
+  .kpi-card {
+    @apply bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800/90 rounded-2xl p-5 shadow-xs hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200 cursor-pointer;
+  }
+
+  .kpi-icon {
+    @apply w-10 h-10 rounded-xl flex items-center justify-center shrink-0;
+  }
+
+  .kpi-label {
+    @apply text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider;
+  }
+
+  .kpi-value {
+    @apply text-2xl font-black text-slate-900 dark:text-white font-heading mt-1;
+  }
+
+  .kpi-sub {
+    @apply text-xs text-slate-400 dark:text-slate-500 mt-1;
+  }
+
+  .table-container {
+    @apply bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800/90 rounded-2xl shadow-xs overflow-hidden;
+  }
+
+  .table-header {
+    @apply bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-500 uppercase tracking-wider;
+  }
+
+  .table-row {
+    @apply hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors cursor-pointer;
+  }
+
+  .table-cell {
+    @apply py-3 px-4;
+  }
+
+  .page-title {
+    @apply text-xl font-bold text-slate-900 dark:text-white tracking-tight font-heading;
+  }
+
+  .page-subtitle {
+    @apply text-xs text-slate-500 dark:text-slate-400;
+  }
+
+  .section-title {
+    @apply text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider;
+  }
+
   .muted-label {
     @apply text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500;
+  }
+
+  .overlay {
+    @apply fixed inset-0 z-50 bg-slate-900/60;
+  }
+
+  .modal-card {
+    @apply bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl;
+  }
+
+  .empty-state {
+    @apply py-12 text-center text-slate-400 dark:text-slate-500;
   }
 }
 
 @media print {
-  /* Hide non-printable screen UI elements */
   html, body {
     height: auto !important;
     min-height: auto !important;
@@ -89,19 +175,10 @@
     print-color-adjust: exact !important;
   }
 
-  aside,
-  header,
-  nav,
-  footer,
-  button,
-  .no-print,
-  .screen-only,
-  #sidebar,
-  #top-header {
+  aside, header, nav, footer, button, .no-print, .screen-only, #sidebar, #top-header {
     display: none !important;
   }
 
-  /* Isolate printable receipt content directly */
   #printable-content {
     display: block !important;
     position: static !important;
@@ -129,5 +206,3 @@
     margin: 6mm 8mm;
   }
 }
-
-

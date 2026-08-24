@@ -154,7 +154,7 @@ export const EditJobPage: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Edit Repair Record</h1>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight font-heading">Edit Repair Record</h1>
             <p className="text-xs text-slate-500">Update hardware specifications, charges, or status for {job.token_number}</p>
           </div>
         </div>
@@ -166,13 +166,13 @@ export const EditJobPage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Customer & Specs */}
           <div className="space-y-6">
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs space-y-4">
+            <div className="card-container space-y-4">
               <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-2">
                 Customer Details
               </h2>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  <label className="form-label">
                     Customer Name *
                   </label>
                   <input
@@ -184,7 +184,7 @@ export const EditJobPage: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  <label className="form-label">
                     Mobile Phone *
                   </label>
                   <input
@@ -196,7 +196,7 @@ export const EditJobPage: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  <label className="form-label">
                     Address / City
                   </label>
                   <input
@@ -209,7 +209,7 @@ export const EditJobPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs space-y-4">
+            <div className="card-container space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                 <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                   Device Hardware Specs
@@ -238,7 +238,7 @@ export const EditJobPage: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  <label className="form-label">
                     Model Name
                   </label>
                   <input
@@ -249,7 +249,7 @@ export const EditJobPage: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  <label className="form-label">
                     Serial Number
                   </label>
                   <input
@@ -260,7 +260,7 @@ export const EditJobPage: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  <label className="form-label">
                     RAM Memory
                   </label>
                   <input
@@ -271,7 +271,7 @@ export const EditJobPage: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  <label className="form-label">
                     Hard Drive / SSD
                   </label>
                   <input
@@ -287,7 +287,7 @@ export const EditJobPage: React.FC = () => {
 
           {/* Right Column: Symptoms, Dates & Charges */}
           <div className="space-y-6">
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs space-y-4">
+            <div className="card-container space-y-4">
               <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-2">
                 Symptoms & Problem Description
               </h2>
@@ -299,7 +299,7 @@ export const EditJobPage: React.FC = () => {
               />
             </div>
 
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs space-y-4">
+            <div className="card-container space-y-4">
               <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-2">
                 Charges & Repair Status
               </h2>
@@ -324,7 +324,7 @@ export const EditJobPage: React.FC = () => {
                 />
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  <label className="form-label">
                     Repair Charges (PKR)
                   </label>
                   <input
@@ -336,7 +336,7 @@ export const EditJobPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  <label className="form-label">
                     Payment Status
                   </label>
                   <div className="grid grid-cols-3 gap-2 pt-1">
@@ -371,7 +371,7 @@ export const EditJobPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  <label className="form-label">
                     Delivery Status
                   </label>
                   <div className="grid grid-cols-5 gap-1.5 pt-1">

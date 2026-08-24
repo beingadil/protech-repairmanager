@@ -126,7 +126,7 @@ export const SyncSettingsComponent: React.FC = () => {
 
       {/* Path Configuration Form */}
       <form onSubmit={handleSavePath} className="space-y-3">
-        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center justify-between">
+        <label className="form-label flex items-center justify-between">
           <span className="flex items-center gap-1.5">
             <Folder className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
             Local Google Drive Folder Path

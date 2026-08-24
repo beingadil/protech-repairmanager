@@ -153,7 +153,7 @@ export const AnalyticsPage: React.FC = () => {
     >
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight font-heading">Analytics & Financial Reports</h1>
+        <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight font-heading">Analytics & Financial Reports</h1>
         <p className="text-xs text-slate-500 dark:text-slate-400">Real-time business intelligence, revenue metrics, and hardware fault trends</p>
       </div>
 
@@ -161,25 +161,25 @@ export const AnalyticsPage: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <motion.div whileHover={{ y: -2 }} className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800/90 rounded-2xl p-5 shadow-xs">
           <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Gross Earnings</span>
-          <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-2 font-heading">{formatCurrency(totalRevenue)}</p>
+          <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-2 font-heading">{formatCurrency(totalRevenue)}</p>
           <span className="text-xs text-slate-400 dark:text-slate-500">Collected repair charges</span>
         </motion.div>
 
         <motion.div whileHover={{ y: -2 }} className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800/90 rounded-2xl p-5 shadow-xs">
           <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Repairs</span>
-          <p className="text-2xl font-black text-slate-900 dark:text-white mt-2 font-heading">{totalJobs}</p>
+          <p className="text-xl font-bold text-slate-900 dark:text-white mt-2 font-heading">{totalJobs}</p>
           <span className="text-xs text-slate-400 dark:text-slate-500">Recorded intake devices</span>
         </motion.div>
 
         <motion.div whileHover={{ y: -2 }} className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800/90 rounded-2xl p-5 shadow-xs">
           <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Average Ticket Charge</span>
-          <p className="text-2xl font-black text-blue-600 dark:text-blue-400 mt-2 font-heading">{formatCurrency(avgTicket)}</p>
+          <p className="text-xl font-black text-blue-600 dark:text-blue-400 mt-2 font-heading">{formatCurrency(avgTicket)}</p>
           <span className="text-xs text-slate-400 dark:text-slate-500">Average price per repair</span>
         </motion.div>
 
         <motion.div whileHover={{ y: -2 }} className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800/90 rounded-2xl p-5 shadow-xs">
           <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Device Type Breakdown</span>
-          <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400 mt-2 font-heading">
+          <p className="text-xl font-black text-indigo-600 dark:text-indigo-400 mt-2 font-heading">
             {laptopCount} : {pcCount}
           </p>
           <span className="text-xs text-slate-400 dark:text-slate-500">{laptopCount} Laptops • {pcCount} Desktops</span>

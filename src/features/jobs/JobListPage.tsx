@@ -16,7 +16,8 @@ import {
   Check,
   Clock,
   RotateCcw,
-  X
+  X,
+  Wrench
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { query, execute } from '../../lib/db';
@@ -271,7 +272,7 @@ export const JobListPage: React.FC = () => {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm border-collapse">
             <thead>
-              <tr className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-500 uppercase tracking-wider">
+              <tr className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                 <th className="py-3 px-4">Token #</th>
                 <th className="py-3 px-4">Customer</th>
                 <th className="py-3 px-4">Device Specs</th>
@@ -292,7 +293,9 @@ export const JobListPage: React.FC = () => {
               ) : filteredJobs.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-12 text-center text-slate-400">
-                    No repair jobs found matching the search criteria.
+                    <Wrench className="w-10 h-10 mx-auto mb-3 opacity-40" />
+                    <p className="text-sm font-medium">No repair jobs found</p>
+                    <p className="text-xs text-slate-400 mt-1">Try adjusting your filters or search terms</p>
                   </td>
                 </tr>
               ) : (

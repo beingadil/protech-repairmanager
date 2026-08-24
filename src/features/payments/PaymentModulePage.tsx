@@ -799,7 +799,7 @@ export const PaymentModulePage: React.FC = () => {
               ) : filteredTransactions.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="py-12 text-center text-slate-400">
-                    No ledger transactions found matching the filter criteria.
+                    No transactions found. Use "New Entry" to record your first transaction.
                   </td>
                 </tr>
               ) : (
@@ -931,7 +931,7 @@ export const PaymentModulePage: React.FC = () => {
               <form onSubmit={handleSingleSubmit} className="space-y-4">
                 {/* Credit vs Debit Switch */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                  <label className="form-label">
                     Transaction Flow *
                   </label>
                   <div className="grid grid-cols-2 gap-3">
@@ -969,7 +969,7 @@ export const PaymentModulePage: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                    <label className="form-label">
                       Date *
                     </label>
                     <input
@@ -982,7 +982,7 @@ export const PaymentModulePage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                    <label className="form-label">
                       Amount (PKR) *
                     </label>
                     <input
@@ -999,7 +999,7 @@ export const PaymentModulePage: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                    <label className="form-label">
                       Category *
                     </label>
                     <select
@@ -1016,7 +1016,7 @@ export const PaymentModulePage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                    <label className="form-label">
                       Payment Account / Method *
                     </label>
                     <select
@@ -1073,7 +1073,7 @@ export const PaymentModulePage: React.FC = () => {
                 {/* Reference Token / Linked Repair Job Selector */}
                 <div className="bg-slate-50 dark:bg-slate-800/50 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase">
+                    <label className="form-label">
                       Reference Repair Job / Token (Optional)
                     </label>
                     {partyJobsList.length > 0 && (
@@ -1131,7 +1131,7 @@ export const PaymentModulePage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  <label className="form-label">
                     Description / Purpose *
                   </label>
                   <input
@@ -1145,7 +1145,7 @@ export const PaymentModulePage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  <label className="form-label">
                     Additional Notes
                   </label>
                   <input

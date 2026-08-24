@@ -139,7 +139,7 @@ export const JobDetailPage: React.FC = () => {
           </button>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+              <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight font-heading">
                 {job.model || `${job.job_type.toUpperCase()} System`}
               </h1>
               <TokenDisplay token={job.token_number} size="md" />
@@ -213,7 +213,7 @@ export const JobDetailPage: React.FC = () => {
           />
 
           {/* Status Bar */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-wrap items-center justify-between gap-4">
+          <div className="card-container flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Payment Status</span>
@@ -238,12 +238,12 @@ export const JobDetailPage: React.FC = () => {
 
             <div className="text-right">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Charges</span>
-              <span className="text-2xl font-black text-slate-900 dark:text-white">{formatCurrency(job.charges)}</span>
+              <span className="text-xl font-black text-slate-900 dark:text-white">{formatCurrency(job.charges)}</span>
             </div>
           </div>
 
           {/* Fault & Symptoms */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs space-y-3">
+          <div className="card-container space-y-3">
             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Reported Symptoms & Issues</h3>
             <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-slate-100 text-sm font-medium leading-relaxed">
               {job.symptoms || 'No specific fault described at intake.'}
@@ -251,7 +251,7 @@ export const JobDetailPage: React.FC = () => {
           </div>
 
           {/* Hardware Specs Grid */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs space-y-4">
+          <div className="card-container space-y-4">
             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-2">
               Device Specifications
             </h3>
@@ -296,7 +296,7 @@ export const JobDetailPage: React.FC = () => {
         {/* Right Sidebar: Customer & Print QR */}
         <div className="space-y-6">
           {/* Customer Profile Box */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs space-y-4">
+          <div className="card-container space-y-4">
             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-2">
               Customer Contact
             </h3>
@@ -337,7 +337,7 @@ export const JobDetailPage: React.FC = () => {
           </div>
 
           {/* Key Dates & Accessories */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs space-y-3">
+          <div className="card-container space-y-3">
             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-2">
               Intake & Return Info
             </h3>
@@ -363,7 +363,7 @@ export const JobDetailPage: React.FC = () => {
           </div>
 
           {/* Quick QR Code Display */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs text-center space-y-3">
+          <div className="card-container text-center space-y-3">
             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Repair Token QR Code</h3>
             <div className="flex justify-center">
               <QRCodeDisplay value={job.token_number} size={110} />

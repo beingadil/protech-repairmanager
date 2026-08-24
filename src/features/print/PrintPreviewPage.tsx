@@ -60,7 +60,7 @@ export const PrintPreviewPage: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Print Ticket / Invoice</h1>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight font-heading">Print Ticket / Invoice</h1>
             <p className="text-xs text-slate-500">Preview and print thermal receipt or official A4 invoice for {job.token_number}</p>
           </div>
         </div>
