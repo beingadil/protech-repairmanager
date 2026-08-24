@@ -79,7 +79,7 @@ export const JobListPage: React.FC = () => {
     }
   };
 
-  // Quick Inline Status Dropdown
+  // Quick Inline Status Dropdowns
   const updateDeliverStatus = async (job: Job, newStatus: string, e: React.SyntheticEvent) => {
     e.stopPropagation();
     try {
@@ -91,6 +91,22 @@ export const JobListPage: React.FC = () => {
       fetchJobs();
     } catch {
       toast.error('Failed to update delivery status.');
+    }
+  };
+
+  const updatePaymentStatus = async (job: Job, newStatus: string, e: React.SyntheticEvent) => {
+    e.stopPropagation();
+    try {
+      // Complimentary = mark as paid but do NOT create a financial transaction
+      await execute(`UPDATE jobs SET payment_status = ?, updated_at = datetime('now') WHERE id = ?`, [
+        newStatus,
+        job.id
+      ]);
+      const label = newStatus === 'complimentary' ? 'COMPLIMENTARY (No Payment)' : newStatus.toUpperCase();
+      toast.success(`Job ${job.token_number} → ${label}`);
+      fetchJobs();
+    } catch {
+      toast.error('Failed to update payment status.');
     }
   };
 
@@ -195,6 +211,7 @@ export const JobListPage: React.FC = () => {
               <option value="all">Payment: All</option>
               <option value="due">Payment: DUE Only</option>
               <option value="paid">Payment: PAID Only</option>
+              <option value="complimentary">Payment: COMPLIMENTARY</option>
             </select>
           </div>
 
@@ -337,11 +354,18 @@ export const JobListPage: React.FC = () => {
                         {formatCurrency(job.charges)}
                       </td>
 
-                      {/* Payment Status (managed from the Payments module) */}
+                      {/* Payment Status — inline dropdown */}
                       <td className="py-3.5 px-4">
-                        <span title="Payment status is set automatically when a payment is received in the Payments module">
-                          <StatusBadge type="payment" status={job.payment_status} size="sm" />
-                        </span>
+                        <select
+                          value={job.payment_status}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => updatePaymentStatus(job, e.target.value, e)}
+                          className="text-xs font-bold rounded-full border px-2 py-1 bg-transparent cursor-pointer focus:outline-none focus:ring-2 focus:ring-slate-400/30 dark:focus:ring-slate-500/30"
+                        >
+                          <option value="due">⏳ Due</option>
+                          <option value="paid">✅ Paid</option>
+                          <option value="complimentary">💜 No Payment</option>
+                        </select>
                       </td>
 
                       {/* Delivery Status with inline dropdown */}

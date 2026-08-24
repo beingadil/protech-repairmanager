@@ -1,5 +1,5 @@
 export type JobType = 'laptop' | 'pc';
-export type PaymentStatus = 'paid' | 'due';
+export type PaymentStatus = 'paid' | 'due' | 'complimentary';
 export type DeliverStatus = 'pending' | 'in_progress' | 'in_diagnostics' | 'ready' | 'delivered';
 
 export interface Job {

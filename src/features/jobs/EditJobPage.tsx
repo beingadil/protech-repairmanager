@@ -339,11 +339,11 @@ export const EditJobPage: React.FC = () => {
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
                     Payment Status
                   </label>
-                  <div className="flex items-center gap-2 pt-1">
+                  <div className="grid grid-cols-3 gap-2 pt-1">
                     <button
                       type="button"
                       onClick={() => setPaymentStatus('due')}
-                      className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold border ${
+                      className={`py-1.5 px-3 rounded-lg text-xs font-bold border ${
                         paymentStatus === 'due' ? 'bg-rose-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                       }`}
                     >
@@ -352,11 +352,20 @@ export const EditJobPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setPaymentStatus('paid')}
-                      className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold border ${
+                      className={`py-1.5 px-3 rounded-lg text-xs font-bold border ${
                         paymentStatus === 'paid' ? 'bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                       }`}
                     >
                       PAID
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentStatus('complimentary')}
+                      className={`py-1.5 px-3 rounded-lg text-xs font-bold border ${
+                        paymentStatus === 'complimentary' ? 'bg-violet-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                      }`}
+                    >
+                      NO PAYMENT
                     </button>
                   </div>
                 </div>

@@ -26,7 +26,7 @@ export function generateWhatsAppMessage(
   const customer = job.customer_name || 'Valued Customer';
   const device = `${job.job_type.toUpperCase()} - ${job.model || 'Device'}`;
   const charges = formatCurrency(job.charges);
-  const paymentStatus = job.payment_status === 'paid' ? 'Paid' : `Due (${charges})`;
+  const paymentStatus = job.payment_status === 'complimentary' ? 'No Payment (Complimentary)' : job.payment_status === 'paid' ? 'Paid' : `Due (${charges})`;
 
   if (templateType === 'ready') {
     return `Hello ${customer},

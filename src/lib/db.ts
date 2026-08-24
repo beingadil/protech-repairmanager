@@ -129,8 +129,9 @@ export async function batch(
  */
 export async function getNextPTSToken(): Promise<string> {
   try {
+    // Scan ALL active jobs (not just last 200) and parse every token format
     const rows = await query<{ token_number: string }>(
-      "SELECT token_number FROM jobs WHERE token_number IS NOT NULL AND deleted_at IS NULL ORDER BY id DESC LIMIT 200"
+      "SELECT token_number FROM jobs WHERE token_number IS NOT NULL AND deleted_at IS NULL"
     );
     let maxNum = 0;
     for (const r of rows) {
@@ -139,9 +140,7 @@ export async function getNextPTSToken(): Promise<string> {
       if (match) {
         const num = parseInt(match[1], 10);
         if (!isNaN(num) && num > maxNum) {
-          if (num < 1000) {
-            maxNum = num;
-          }
+          maxNum = num;
         }
       }
     }
@@ -151,6 +150,35 @@ export async function getNextPTSToken(): Promise<string> {
     console.error('Failed calculating next PTS token:', err);
     return 'PTS-001';
   }
+}
+
+/**
+ * Attempt to insert a job, retrying with fresh token on UNIQUE constraint failure.
+ * This handles race conditions where two concurrent creates grab the same token.
+ */
+export async function insertJobWithRetry(
+  jobValues: unknown[],
+  maxRetries: number = 3
+): Promise<string> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      await execute(
+        `INSERT INTO jobs (
+          token_number, customer_id, job_type, serial_no, model, ram, hard, processor,
+          symptoms, receive_date, return_date, charges, has_charger, payment_status, deliver_status, notes, reference_token, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
+        jobValues
+      );
+      return jobValues[0] as string; // return the token that was actually inserted
+    } catch (e: any) {
+      const isUnique = e?.message?.includes('UNIQUE constraint failed');
+      if (!isUnique || attempt >= maxRetries) throw e;
+      // Token collided — grab the next one and rebuild the values array
+      const freshToken = await getNextPTSToken();
+      jobValues[0] = freshToken;
+    }
+  }
+  throw new Error('Failed to generate unique token after multiple attempts');
 }
 
 export async function exportDatabaseBinary(): Promise<Uint8Array> {

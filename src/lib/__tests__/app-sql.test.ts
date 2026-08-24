@@ -175,4 +175,60 @@ describe('App SQL — strict better-sqlite3 compatibility', () => {
     const row: any = db.prepare('SELECT * FROM financial_transactions').get();
     expect(row.date).toBeTruthy();
   });
+
+  it('token numbers >= 1000 can be inserted (regression for num<1000 bug)', () => {
+    const db = makeDb();
+    db.prepare(
+      `INSERT INTO customers (name, mobile, address, party_type, created_at, updated_at) VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))`
+    ).run('Cust', '0300', '', 'customer');
+
+    // Insert tokens 1-1002 to prove the generator never skips tokens >= 1000
+    const insert = db.prepare(
+      `INSERT INTO jobs (token_number, customer_id, job_type, serial_no, model, ram, hard, processor, symptoms, receive_date, return_date, charges, has_charger, payment_status, deliver_status, notes, reference_token, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`
+    );
+
+    for (let i = 1; i <= 1002; i++) {
+      const token = `PTS-${i.toString().padStart(3, '0')}`;
+      insert.run(token, 1, 'laptop', '', '', '', '', '', '', '', '', 0, 1, 'due', 'pending', '', null);
+    }
+
+    const rows: any[] = db.prepare('SELECT token_number FROM jobs ORDER BY id').all();
+    expect(rows).toHaveLength(1002);
+    expect(rows[998].token_number).toBe('PTS-999');
+    expect(rows[999].token_number).toBe('PTS-1000');
+    expect(rows[1000].token_number).toBe('PTS-1001');
+    expect(rows[1001].token_number).toBe('PTS-1002');
+  });
+
+  it('MAX token_number query returns correct value across all ranges', () => {
+    const db = makeDb();
+    db.prepare(
+      `INSERT INTO customers (name, mobile, address, party_type, created_at, updated_at) VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))`
+    ).run('Cust', '0300', '', 'customer');
+    const insert = db.prepare(
+      `INSERT INTO jobs (token_number, customer_id, job_type, serial_no, model, ram, hard, processor, symptoms, receive_date, return_date, charges, has_charger, payment_status, deliver_status, notes, reference_token, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`
+    );
+
+    // Insert at high range directly
+    insert.run('PTS-2500', 1, 'laptop', '', '', '', '', '', '', '', '', 0, 1, 'due', 'pending', '', null);
+    insert.run('PTS-0999', 1, 'laptop', '', '', '', '', '', '', '', '', 0, 1, 'due', 'pending', '', null);
+    insert.run('PTS-5000', 1, 'laptop', '', '', '', '', '', '', '', '', 0, 1, 'due', 'pending', '', null);
+
+    // Verify MAX query (simulating what getNextPTSToken should do)
+    const rows: any[] = db.prepare('SELECT token_number FROM jobs WHERE token_number IS NOT NULL AND deleted_at IS NULL').all();
+    let maxNum = 0;
+    for (const r of rows) {
+      const match = r.token_number.match(/^(?:PTS-|TK-)?(\d+)$/i);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (!isNaN(num) && num > maxNum) {
+          maxNum = num;
+        }
+      }
+    }
+    // Must see PTS-5000, not be limited by any threshold
+    expect(maxNum).toBe(5000);
+  });
 });

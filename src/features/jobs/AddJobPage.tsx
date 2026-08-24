@@ -28,7 +28,7 @@ import { toast } from 'sonner';
 import { useSettingsStore } from '../../store/settings';
 import { EnhancedCustomerSupplierSelect } from '../../components/shared/EnhancedCustomerSupplierSelect';
 import { EnhancedDatePicker } from '../../components/common/EnhancedDatePicker';
-import { query, execute, getNextPTSToken } from '../../lib/db';
+import { query, execute, getNextPTSToken, insertJobWithRetry } from '../../lib/db';
 import { JobType, PaymentStatus, DeliverStatus, Job } from '../../types/job';
 import { TokenDisplay } from '../../components/shared/TokenDisplay';
 import { formatCurrency } from '../../lib/utils';
@@ -161,13 +161,8 @@ export const AddJobPage: React.FC = () => {
 
       const safeCharges = isNaN(Number(charges)) ? 0 : Number(charges);
 
-      // 3. Insert Job Record
-      await execute(
-        `INSERT INTO jobs (
-          token_number, customer_id, job_type, serial_no, model, ram, hard, processor,
-          symptoms, receive_date, return_date, charges, has_charger, payment_status, deliver_status, notes, reference_token, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
-        [
+      // 3. Insert Job Record (with retry on UNIQUE constraint)
+      const actualToken = await insertJobWithRetry([
           currentToken,
           finalCustomerId,
           jobType,
@@ -185,8 +180,7 @@ export const AddJobPage: React.FC = () => {
           deliverStatus,
           notes || '',
           referenceToken || null
-        ]
-      );
+      ]);
 
       const jobRes = await query<{ id: number }>('SELECT last_insert_rowid() as id');
       const newJobId = jobRes[0].id;
@@ -202,14 +196,14 @@ export const AddJobPage: React.FC = () => {
             receiveDate,
             safeCharges,
             customerName,
-            currentToken,
-            `Repair Charges received for ${currentToken} (${model || jobType})`,
+            actualToken,
+            `Repair Charges received for ${actualToken} (${model || jobType})`,
             'Auto-recorded from Job Intake'
           ]
         );
       }
 
-      toast.success(`Repair job ${currentToken} registered successfully!`);
+      toast.success(`Repair job ${actualToken} registered successfully!`);
 
       if (andPrint) {
         navigate(`/jobs/${newJobId}/print`);
@@ -266,37 +260,48 @@ export const AddJobPage: React.FC = () => {
 
       const createdTokens: string[] = [];
 
-      // 3. Insert each laptop sequentially
+      // 3. Insert each laptop sequentially with UNIQUE retry
       for (const row of validRows) {
-        const token = `PTS-${nextNum.toString().padStart(3, '0')}`;
-        nextNum++;
-        createdTokens.push(token);
-
         const safeCharges = isNaN(Number(row.charges)) ? 0 : Number(row.charges);
-
-        await execute(
-          `INSERT INTO jobs (
-            token_number, customer_id, job_type, serial_no, model, ram, hard, processor,
-            symptoms, receive_date, return_date, charges, has_charger, payment_status, deliver_status, notes, created_at, updated_at
-          ) VALUES (?, ?, 'laptop', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
-          [
-            token,
-            finalSupplierId,
-            row.serialNo || '',
-            row.model || 'Market Laptop',
-            row.ram || '',
-            row.hard || '',
-            row.processor || '',
-            row.symptoms || 'Dealer checking',
-            bulkReceiveDate,
-            bulkReturnDate,
-            safeCharges,
-            row.hasCharger,
-            row.paymentStatus,
-            row.deliverStatus,
-            `[Supplier Batch: ${supplierName}] ${row.notes || ''}`
-          ]
-        );
+        let inserted = false;
+        for (let retry = 0; retry < 5 && !inserted; retry++) {
+          const token = retry === 0
+            ? `PTS-${nextNum.toString().padStart(3, '0')}`
+            : await getNextPTSToken();
+          if (retry === 0) nextNum++;
+          try {
+            await execute(
+              `INSERT INTO jobs (
+                token_number, customer_id, job_type, serial_no, model, ram, hard, processor,
+                symptoms, receive_date, return_date, charges, has_charger, payment_status, deliver_status, notes, created_at, updated_at
+              ) VALUES (?, ?, 'laptop', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
+              [
+                token,
+                finalSupplierId,
+                row.serialNo || '',
+                row.model || 'Market Laptop',
+                row.ram || '',
+                row.hard || '',
+                row.processor || '',
+                row.symptoms || 'Dealer checking',
+                bulkReceiveDate,
+                bulkReturnDate,
+                safeCharges,
+                row.hasCharger,
+                row.paymentStatus,
+                row.deliverStatus,
+                `[Supplier Batch: ${supplierName}] ${row.notes || ''}`
+              ]
+            );
+            createdTokens.push(token);
+            inserted = true;
+          } catch (e: any) {
+            const isUnique = e?.message?.includes('UNIQUE constraint failed');
+            if (!isUnique) throw e;
+            // Token collided — retry with fresh token
+          }
+        }
+        if (!inserted) throw new Error('Failed to generate unique token after multiple attempts');
       }
 
       toast.success(
@@ -693,11 +698,11 @@ export const AddJobPage: React.FC = () => {
                     <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
                       Initial Payment Status
                     </label>
-                    <div className="flex items-center gap-2 pt-1">
+                    <div className="grid grid-cols-3 gap-2 pt-1">
                       <button
                         type="button"
                         onClick={() => setPaymentStatus('due')}
-                        className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
+                        className={`py-1.5 px-3 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
                           paymentStatus === 'due'
                             ? 'bg-rose-600 text-white border-rose-600'
                             : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
@@ -708,13 +713,24 @@ export const AddJobPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setPaymentStatus('paid')}
-                        className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
+                        className={`py-1.5 px-3 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
                           paymentStatus === 'paid'
                             ? 'bg-emerald-600 text-white border-emerald-600'
                             : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
                         }`}
                       >
                         PAID
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPaymentStatus('complimentary')}
+                        className={`py-1.5 px-3 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
+                          paymentStatus === 'complimentary'
+                            ? 'bg-violet-600 text-white border-violet-600'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+                        }`}
+                      >
+                        NO PAYMENT
                       </button>
                     </div>
                   </div>

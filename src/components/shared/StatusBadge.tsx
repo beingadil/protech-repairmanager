@@ -31,6 +31,16 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   }
 
   if (type === 'payment') {
+    if (status === 'complimentary') {
+      return (
+        <span
+          className={`inline-flex items-center rounded-full border ${sizeClasses} bg-violet-500/15 text-violet-600 dark:text-violet-400 border-violet-500/30`}
+        >
+          <CheckCircle2 className="w-3.5 h-3.5" />
+          COMPLIMENTARY
+        </span>
+      );
+    }
     const isPaid = status === 'paid';
     return (
       <span
