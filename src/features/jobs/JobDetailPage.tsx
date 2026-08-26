@@ -33,6 +33,7 @@ import { QRCodeDisplay } from '../../components/shared/QRCodeDisplay';
 import { useSettingsStore } from '../../store/settings';
 import { generateWhatsAppMessage, openWhatsAppDeeplink } from '../../lib/whatsapp';
 import { JobProgressTracker } from '../../components/shared/JobProgressTracker';
+import { PaymentStatusCard } from '../../components/shared/paymentStatus';
 
 export const JobDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -115,7 +116,7 @@ export const JobDetailPage: React.FC = () => {
   };
 
   const handlePrint = () => {
-    window.print();
+    navigate(`/jobs/${job!.id}/print?type=payment_receipt`);
   };
 
   if (isLoading || !job) {
@@ -169,7 +170,7 @@ export const JobDetailPage: React.FC = () => {
           <button
             onClick={handlePrint}
             className="btn-primary"
-            title="Trigger direct window print for receipt"
+            title="Print payment receipt / invoice"
           >
             <Printer className="w-4 h-4" />
             <span>Print Receipt</span>
@@ -214,15 +215,11 @@ export const JobDetailPage: React.FC = () => {
 
           {/* Status Bar */}
           <div className="card-container flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Payment Status</span>
-                <span title="Payment is recorded in the Payments module and updates automatically">
-                  <StatusBadge type="payment" status={job.payment_status} size="lg" />
-                </span>
-              </div>
+            <div className="flex flex-wrap items-center gap-4">
+              {/* Prominent payment status card — e.g. COMPLIMENTARY / No payment required */}
+              <PaymentStatusCard status={job.payment_status} charges={job.charges} />
 
-              <div className="h-8 w-px bg-slate-200 dark:bg-slate-800"></div>
+              <div className="h-8 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block"></div>
 
               <div>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Delivery Status</span>

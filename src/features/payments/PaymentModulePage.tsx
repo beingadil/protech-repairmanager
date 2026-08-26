@@ -105,6 +105,23 @@ async function revertJobToDueIfUnpaid(token: string | null | undefined, excludeT
   }
 }
 
+/** Resolve a repair job + already-paid amount for the payment workflow panel. */
+async function resolveJobForPayment(token: string | null | undefined): Promise<{ job: Job | null; paid: number }> {
+  const t = (token || '').trim();
+  if (!t) return { job: null, paid: 0 };
+  const jobs = await query<Job>(
+    'SELECT * FROM jobs WHERE token_number = ? AND deleted_at IS NULL LIMIT 1',
+    [t]
+  );
+  if (jobs.length === 0) return { job: null, paid: 0 };
+  const paidRows = await query<{ c: number }>(
+    "SELECT COALESCE(SUM(amount), 0) as c FROM financial_transactions WHERE type = 'credit' AND token_number = ?",
+    [t]
+  );
+  const paid = paidRows.length > 0 ? Number(paidRows[0].c) || 0 : 0;
+  return { job: jobs[0], paid };
+}
+
 export const PaymentModulePage: React.FC = () => {
   const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -140,6 +157,11 @@ export const PaymentModulePage: React.FC = () => {
   const [entryTokenNumber, setEntryTokenNumber] = useState<string>('');
   const [entryDescription, setEntryDescription] = useState<string>('');
   const [entryNotes, setEntryNotes] = useState<string>('');
+
+  // Repair-job payment workflow state (shown when a credit references a job)
+  const [entryJob, setEntryJob] = useState<Job | null>(null);
+  const [entryDiscount, setEntryDiscount] = useState<string>('0');
+  const [entryPaidBefore, setEntryPaidBefore] = useState<number>(0);
   const [partyJobsList, setPartyJobsList] = useState<Job[]>([]);
   const [allSavedParties, setAllSavedParties] = useState<{ id: number; name: string; party_type: string }[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -269,7 +291,29 @@ export const PaymentModulePage: React.FC = () => {
     try {
       const t = (entryTokenNumber || '').trim();
 
-      // Batch: find job + insert + mark-paid + reload all in ONE IPC call
+      // Repair-job credit workflow: discount + balance validation (accounting integrity).
+      if (entryType === 'credit' && entryJob && t) {
+        if (entryJob.payment_status === 'complimentary') {
+          toast.error('This job is COMPLIMENTARY (no payment required). Do not post a cash receipt for it.');
+          setIsSubmitting(false);
+          return;
+        }
+        const discount = Math.min(entryCharges, Math.max(0, Number(entryDiscount) || 0));
+        if (discount > entryCharges) {
+          toast.error('Discount cannot exceed the repair charges.');
+          setIsSubmitting(false);
+          return;
+        }
+        if (amountNum > entryBalanceDue) {
+          toast.error(
+            `Payment of ${formatCurrency(amountNum)} exceeds the balance due (${formatCurrency(entryBalanceDue)}).`
+          );
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      // Batch: find job + insert + update job + reload all in ONE IPC call
       const ops: Array<{ sql: string; params?: unknown[] }> = [];
 
       // 1. Find job ID by token (if token given)
@@ -291,12 +335,24 @@ export const PaymentModulePage: React.FC = () => {
         params: insertParams
       });
 
-      // 2. If credit + token, mark job as paid
+      // 2. If credit + token — persist discount and derive payment status from the
+      // actual balance AFTER this entry (no overpayment, no fake receipts).
       if (entryType === 'credit' && t) {
-        ops.push({
-          sql: "UPDATE jobs SET payment_status = 'paid', updated_at = datetime('now') WHERE token_number = ? AND deleted_at IS NULL",
-          params: [t]
-        });
+        if (entryJob) {
+          const discount = Math.min(entryCharges, Math.max(0, Number(entryDiscount) || 0));
+          const net = Math.max(0, entryCharges - discount);
+          const newBalance = Math.max(0, net - (entryPaidBefore + amountNum));
+          const newStatus = newBalance <= 0 ? 'paid' : 'due';
+          ops.push({
+            sql: "UPDATE jobs SET discount = ?, payment_status = ?, updated_at = datetime('now') WHERE token_number = ? AND deleted_at IS NULL",
+            params: [discount, newStatus, t]
+          });
+        } else {
+          ops.push({
+            sql: "UPDATE jobs SET payment_status = 'paid', updated_at = datetime('now') WHERE token_number = ? AND deleted_at IS NULL",
+            params: [t]
+          });
+        }
       }
 
       // 3. Reload
@@ -329,7 +385,39 @@ export const PaymentModulePage: React.FC = () => {
     setEntryNotes('');
     setEntryCategory('repair_income');
     setEntryType('credit');
+    setEntryJob(null);
+    setEntryDiscount('0');
+    setEntryPaidBefore(0);
   };
+
+  // When a credit references a repair-job token, resolve the job + paid amount so
+  // the workflow can show original price, discount, net and balance BEFORE payment.
+  const handleEntryTokenChange = async (token: string) => {
+    setEntryTokenNumber(token);
+    const { job, paid } = await resolveJobForPayment(token);
+    setEntryJob(job);
+    setEntryPaidBefore(paid);
+    if (job) {
+      const charges = Math.max(0, Number(job.charges) || 0);
+      const existingDiscount = Math.max(0, Number(job.discount) || 0);
+      setEntryDiscount(String(existingDiscount));
+      const net = Math.max(0, charges - existingDiscount);
+      const due = Math.max(0, net - paid);
+      setEntryAmount(due > 0 ? due.toString() : '0');
+      if (!entryDescription) {
+        setEntryDescription(`Repair charges for ${job.token_number} (${job.model || job.job_type})`);
+      }
+    } else {
+      setEntryDiscount('0');
+      setEntryPaidBefore(0);
+    }
+  };
+
+  // Money math for the payment workflow panel.
+  const entryCharges = entryJob ? Math.max(0, Number(entryJob.charges) || 0) : 0;
+  const entryDiscountNum = entryJob ? Math.min(entryCharges, Math.max(0, Number(entryDiscount) || 0)) : 0;
+  const entryNet = entryCharges - entryDiscountNum;
+  const entryBalanceDue = Math.max(0, entryNet - entryPaidBefore);
 
   // Submit Multi (Batch) Entries
   const handleMultiSubmit = async (e: React.FormEvent) => {
@@ -1053,18 +1141,12 @@ export const PaymentModulePage: React.FC = () => {
                         setEntryPartyId(null);
                         setEntryPartyName('');
                         setPartyJobsList([]);
-                        setEntryTokenNumber('');
+                        handleEntryTokenChange('');
                       }
                     }}
                     onSelectReferenceJob={(job) => {
                       if (job) {
-                        setEntryTokenNumber(job.token_number);
-                        if (!entryAmount || entryAmount === '0') {
-                          setEntryAmount(job.charges.toString());
-                        }
-                        if (!entryDescription) {
-                          setEntryDescription(`Repair charges for ${job.token_number} (${job.model || job.job_type})`);
-                        }
+                        handleEntryTokenChange(job.token_number);
                       }
                     }}
                   />
@@ -1087,17 +1169,7 @@ export const PaymentModulePage: React.FC = () => {
                     <div className="space-y-2">
                       <select
                         value={entryTokenNumber}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setEntryTokenNumber(val);
-                          const matchedJob = partyJobsList.find((j) => j.token_number === val);
-                          if (matchedJob) {
-                            if (!entryAmount || entryAmount === '0') {
-                              setEntryAmount(matchedJob.charges.toString());
-                            }
-                            setEntryDescription(`Repair charges for ${matchedJob.token_number} (${matchedJob.model || matchedJob.job_type})`);
-                          }
-                        }}
+                        onChange={(e) => handleEntryTokenChange(e.target.value)}
                         className="input-field font-medium text-xs"
                       >
                         <option value="">-- No Specific Job (General Ledger Entry) --</option>
@@ -1113,7 +1185,7 @@ export const PaymentModulePage: React.FC = () => {
                         <input
                           type="text"
                           value={entryTokenNumber}
-                          onChange={(e) => setEntryTokenNumber(e.target.value)}
+                          onChange={(e) => handleEntryTokenChange(e.target.value)}
                           placeholder="e.g. PTS-001"
                           className="input-field text-xs py-1"
                         />
@@ -1123,12 +1195,87 @@ export const PaymentModulePage: React.FC = () => {
                     <input
                       type="text"
                       value={entryTokenNumber}
-                      onChange={(e) => setEntryTokenNumber(e.target.value)}
+                      onChange={(e) => handleEntryTokenChange(e.target.value)}
                       placeholder="e.g. PTS-001 or general reference"
                       className="input-field text-xs"
                     />
                   )}
                 </div>
+
+                {/* ── Repair-job payment calculation (original price / discount / net / balance) ── */}
+                {entryType === 'credit' && entryJob && (
+                  <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 p-4 space-y-3">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">
+                        Payment Calculation — {entryJob.token_number}
+                      </span>
+                      {entryJob.payment_status === 'complimentary' ? (
+                        <span className="px-2 py-0.5 bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 text-[10px] font-bold uppercase rounded-full border border-violet-300 dark:border-violet-700">
+                          Complimentary — No payment required
+                        </span>
+                      ) : (
+                        <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-full border ${
+                          entryJob.payment_status === 'paid'
+                            ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
+                            : 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-700'
+                        }`}>
+                          {entryJob.payment_status}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="form-label">Original Price (Repair Charges)</label>
+                        <div className="input-field font-black text-sm flex items-center">
+                          {formatCurrency(entryCharges)}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="form-label">Discount (PKR)</label>
+                        <input
+                          type="number"
+                          min={0}
+                          max={entryCharges}
+                          value={entryDiscount}
+                          onChange={(e) => {
+                            const v = Math.max(0, parseFloat(e.target.value) || 0);
+                            setEntryDiscount(String(Math.min(v, entryCharges)));
+                          }}
+                          readOnly={entryJob.payment_status === 'complimentary'}
+                          className="input-field font-bold read-only:opacity-60"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 dark:border-slate-700 divide-y divide-slate-200 dark:divide-slate-700 overflow-hidden bg-white dark:bg-slate-900">
+                      <div className="flex items-center justify-between px-3 py-2 text-xs">
+                        <span className="font-bold text-slate-600 dark:text-slate-300">NET AMOUNT</span>
+                        <span className="font-black text-sm text-slate-900 dark:text-white">
+                          {formatCurrency(entryNet)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between px-3 py-2 text-xs">
+                        <span className="font-semibold text-slate-500">Previously Paid</span>
+                        <span className="font-bold text-slate-700 dark:text-slate-200">
+                          {formatCurrency(entryPaidBefore)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between px-3 py-2.5 text-xs">
+                        <span className="font-bold text-slate-600 dark:text-slate-300">BALANCE DUE</span>
+                        <span className={`font-black text-base ${entryBalanceDue > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                          {formatCurrency(entryBalanceDue)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {entryBalanceDue <= 0 && entryPaidBefore > 0 && (
+                      <p className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                        This job is already fully paid — no further payment is required.
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 <div>
                   <label className="form-label">

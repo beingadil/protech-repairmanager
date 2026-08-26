@@ -1,9 +1,18 @@
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
+const PX_TO_MM = 0.264583;
+
+/**
+ * Export the prepared print document (#printable-content) to PDF.
+ *
+ * The page size is derived from the rendered element's physical dimensions so
+ * that A4, 80mm and 58mm documents each produce a correctly-shaped PDF instead
+ * of being forced onto an A4 sheet.
+ */
 export async function exportElementToPDF(
   elementId: string,
-  fileName: string = 'ProData_Invoice.pdf'
+  fileName: string = 'ProTech_Invoice.pdf'
 ): Promise<void> {
   const element = document.getElementById(elementId);
   if (!element) {
@@ -20,11 +29,17 @@ export async function exportElementToPDF(
     });
 
     const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+    const widthMm = Math.max(28, element.offsetWidth * PX_TO_MM);
+    const heightMm = Math.max(40, element.offsetHeight * PX_TO_MM);
 
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    // Page exactly matches the document — no scaling / clipping.
+    const pdf = new jsPDF({
+      orientation: widthMm >= heightMm ? 'l' : 'p',
+      unit: 'mm',
+      format: [widthMm, heightMm]
+    });
+
+    pdf.addImage(imgData, 'PNG', 0, 0, widthMm, heightMm);
     pdf.save(fileName);
   } catch (error) {
     console.error('Error generating PDF:', error);

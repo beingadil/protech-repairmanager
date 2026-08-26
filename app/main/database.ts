@@ -41,6 +41,7 @@ const MIGRATIONS = [
     receive_date TEXT NOT NULL,
     return_date TEXT,
     charges REAL DEFAULT 0,
+    discount REAL NOT NULL DEFAULT 0,
     has_charger INTEGER NOT NULL DEFAULT 0,
     payment_status TEXT NOT NULL DEFAULT 'due',
     deliver_status TEXT NOT NULL DEFAULT 'pending',
@@ -233,6 +234,9 @@ export function getDb(): Database.Database {
     } catch { /* already exists */ }
     try {
       dbInstance.exec("ALTER TABLE customers ADD COLUMN party_type TEXT DEFAULT 'customer';");
+    } catch { /* already exists */ }
+    try {
+      dbInstance.exec('ALTER TABLE jobs ADD COLUMN discount REAL NOT NULL DEFAULT 0;');
     } catch { /* already exists */ }
 
     cleanDemoSeededData(dbInstance);

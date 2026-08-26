@@ -539,34 +539,37 @@ export const CustomersPage: React.FC = () => {
 
                 {/* KPI Summary Cards */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
-                  <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-center">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Total Devices</span>
-                    <span className="text-lg font-black text-slate-900 dark:text-white font-heading">
+                  <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-center flex flex-col items-center justify-center h-full min-h-[76px]">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block truncate max-w-full px-1">Total Devices</span>
+                    <span className="text-lg font-black text-slate-900 dark:text-white font-heading block truncate max-w-full px-1">
                       {partyJobs.length}
                     </span>
                   </div>
 
-                  <div className="bg-amber-50 dark:bg-amber-950/40 p-3 rounded-xl border border-amber-200 dark:border-amber-900/60 text-center">
-                    <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase block">
+                  <div className="bg-amber-50 dark:bg-amber-950/40 p-3 rounded-xl border border-amber-200 dark:border-amber-900/60 text-center flex flex-col items-center justify-center h-full min-h-[76px]">
+                    <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase block truncate max-w-full px-1">
                       Pending
                     </span>
-                    <span className="text-lg font-black text-amber-600 dark:text-amber-400 font-heading">
+                    <span className="text-lg font-black text-amber-600 dark:text-amber-400 font-heading block truncate max-w-full px-1">
                       {partyJobs.filter((j) => j.deliver_status === 'pending').length}
                     </span>
                   </div>
 
-                  <div className="bg-emerald-50 dark:bg-emerald-950/40 p-3 rounded-xl border border-emerald-200 dark:border-emerald-900/60 text-center">
-                    <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase block">
+                  <div className="bg-emerald-50 dark:bg-emerald-950/40 p-3 rounded-xl border border-emerald-200 dark:border-emerald-900/60 text-center flex flex-col items-center justify-center h-full min-h-[76px]">
+                    <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase block truncate max-w-full px-1">
                       Delivered
                     </span>
-                    <span className="text-lg font-black text-emerald-600 dark:text-emerald-400 font-heading">
+                    <span className="text-lg font-black text-emerald-600 dark:text-emerald-400 font-heading block truncate max-w-full px-1">
                       {partyJobs.filter((j) => j.deliver_status === 'delivered').length}
                     </span>
                   </div>
 
-                  <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-center">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Total Billed</span>
-                    <span className="text-lg font-black text-slate-900 dark:text-white font-heading">
+                  <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-center flex flex-col items-center justify-center h-full min-h-[76px]">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block truncate max-w-full px-1">Total Billed</span>
+                    <span
+                      title={formatCurrency(partyJobs.reduce((acc, j) => acc + (j.charges || 0), 0))}
+                      className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-heading block truncate max-w-full px-1"
+                    >
                       {formatCurrency(partyJobs.reduce((acc, j) => acc + (j.charges || 0), 0))}
                     </span>
                   </div>

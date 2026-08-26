@@ -343,7 +343,7 @@ export const EditJobPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setPaymentStatus('due')}
-                      className={`py-1.5 px-3 rounded-lg text-xs font-bold border ${
+                      className={`py-2 px-3 rounded-xl text-xs font-bold border ${
                         paymentStatus === 'due' ? 'bg-rose-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                       }`}
                     >
@@ -352,7 +352,7 @@ export const EditJobPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setPaymentStatus('paid')}
-                      className={`py-1.5 px-3 rounded-lg text-xs font-bold border ${
+                      className={`py-2 px-3 rounded-xl text-xs font-bold border ${
                         paymentStatus === 'paid' ? 'bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                       }`}
                     >
@@ -361,7 +361,7 @@ export const EditJobPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setPaymentStatus('complimentary')}
-                      className={`py-1.5 px-3 rounded-lg text-xs font-bold border ${
+                      className={`py-2 px-3 rounded-xl text-xs font-bold border ${
                         paymentStatus === 'complimentary' ? 'bg-violet-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                       }`}
                     >
@@ -374,7 +374,7 @@ export const EditJobPage: React.FC = () => {
                   <label className="form-label">
                     Delivery Status
                   </label>
-                  <div className="grid grid-cols-5 gap-1.5 pt-1">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 pt-1">
                     {([
                       ['pending', 'Pending', 'bg-slate-500'],
                       ['in_progress', 'In Progress', 'bg-blue-600'],
@@ -386,7 +386,7 @@ export const EditJobPage: React.FC = () => {
                         key={val}
                         type="button"
                         onClick={() => setDeliverStatus(val as DeliverStatus)}
-                        className={`py-1.5 px-1 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer whitespace-nowrap ${
+                        className={`py-2 px-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
                           deliverStatus === val
                             ? `${activeBg} text-white`
                             : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'

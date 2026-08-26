@@ -1,23 +1,41 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Printer, Download, Check, FileText } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, Printer, Download, Receipt, FileText, BadgeCheck, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { query } from '../../lib/db';
 import { Job } from '../../types/job';
+import { FinancialTransaction } from '../../types/payment';
 import { useSettingsStore } from '../../store/settings';
-import { formatCurrency, formatDate } from '../../lib/utils';
-import { QRCodeDisplay } from '../../components/shared/QRCodeDisplay';
 import { exportElementToPDF, triggerPrintWindow } from '../../lib/print-utils';
-import { ProTechLogo } from '../../components/shared/ProTechLogo';
+import { buildInvoiceData, InvoiceDocType, InvoicePaper } from '../../lib/invoice';
+import { InvoiceDocument } from './InvoiceDocument';
+
+const PAPER_OPTIONS: { value: InvoicePaper; label: string; desc: string }[] = [
+  { value: 'a4', label: 'A4', desc: 'Official invoice' },
+  { value: '80', label: '80mm', desc: 'Thermal receipt' },
+  { value: '58', label: '58mm', desc: 'Narrow thermal' }
+];
+
+const DOC_OPTIONS: { value: InvoiceDocType; label: string; icon: React.ReactNode }[] = [
+  { value: 'payment_receipt', label: 'Payment Receipt', icon: React.createElement(Receipt, { className: 'w-3.5 h-3.5' }) },
+  { value: 'repair_job', label: 'Repair Ticket', icon: React.createElement(FileText, { className: 'w-3.5 h-3.5' }) },
+  { value: 'waiver', label: 'Complimentary', icon: React.createElement(BadgeCheck, { className: 'w-3.5 h-3.5' }) }
+];
 
 export const PrintPreviewPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { settings } = useSettingsStore();
 
   const [job, setJob] = useState<Job | null>(null);
-  const [template, setTemplate] = useState<'58' | '80' | 'a4'>(
-    (settings.thermal_size as '58' | '80' | 'a4') || '80'
+  const [txList, setTxList] = useState<FinancialTransaction[]>([]);
+
+  const [paper, setPaper] = useState<InvoicePaper>(
+    (['58', '80', 'a4'].includes(settings.thermal_size) ? settings.thermal_size : '80') as InvoicePaper
+  );
+  const [docType, setDocType] = useState<InvoiceDocType>(
+    (searchParams.get('type') as InvoiceDocType) || 'payment_receipt'
   );
 
   useEffect(() => {
@@ -29,29 +47,71 @@ export const PrintPreviewPage: React.FC = () => {
          WHERE j.id = ? AND j.deleted_at IS NULL LIMIT 1`,
         [parseInt(id, 10)]
       ).then((res) => {
-        if (res.length > 0) setJob(res[0]);
+        if (res.length > 0) {
+          setJob(res[0]);
+          // Complimentary jobs default to the waiver document — never a fake payment receipt.
+          if (res[0].payment_status === 'complimentary') {
+            setDocType('waiver');
+          }
+        }
       });
     }
   }, [id]);
 
-  if (!job) {
+  // Load ledger history so the receipt shows real paid / balance amounts.
+  useEffect(() => {
+    if (!job) return;
+    query<FinancialTransaction>(
+      `SELECT * FROM financial_transactions WHERE token_number = ? ORDER BY date ASC, id ASC`,
+      [job.token_number]
+    ).then(setTxList);
+  }, [job]);
+
+  // Inject the correct @page rule + paper marker for the active template.
+  useEffect(() => {
+    const styleId = 'print-page-size';
+    let el = document.getElementById(styleId) as HTMLStyleElement | null;
+    if (!el) {
+      el = document.createElement('style');
+      el.id = styleId;
+      document.head.appendChild(el);
+    }
+    el.textContent =
+      paper === 'a4'
+        ? '@page { size: A4 portrait; margin: 6mm; }'
+        : `@page { size: ${paper}mm auto; margin: 0; }`;
+
+    document.documentElement.setAttribute('data-paper', paper);
+    return () => document.documentElement.removeAttribute('data-paper');
+  }, [paper]);
+
+  const invoiceData = useMemo(() => {
+    if (!job) return null;
+    return buildInvoiceData(job, settings, txList, docType, paper);
+  }, [job, settings, txList, docType, paper]);
+
+  if (!job || !invoiceData) {
     return <div className="py-20 text-center text-slate-400">Loading print preview...</div>;
   }
 
-  const handlePrint = () => {
-    triggerPrintWindow('printable-content');
-  };
+  const handlePrint = () => triggerPrintWindow('printable-content');
 
   const handleDownloadPDF = async () => {
     toast.info('Generating PDF document...');
-    await exportElementToPDF('printable-content', `Repair_Invoice_${job.token_number}.pdf`);
+    await exportElementToPDF('printable-content', `${job.token_number}_${docType}.pdf`);
     toast.success('PDF downloaded successfully.');
   };
 
+  const changeDocType = (t: InvoiceDocType) => {
+    setDocType(t);
+    setSearchParams({ type: t }, { replace: true });
+  };
+
+  const showComplimentaryHint = docType === 'payment_receipt' && job.payment_status === 'complimentary';
+
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      {/* Top Header */}
-      <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
+      <div className="print-toolbar flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate(`/jobs/${job.id}`)}
@@ -60,12 +120,14 @@ export const PrintPreviewPage: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight font-heading">Print Ticket / Invoice</h1>
-            <p className="text-xs text-slate-500">Preview and print thermal receipt or official A4 invoice for {job.token_number}</p>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight font-heading">
+              Print / Invoice
+            </h1>
+            <p className="text-xs text-slate-500">
+              {job.token_number} — {job.customer_name}
+            </p>
           </div>
         </div>
-
-        {/* Action Buttons */}
         <div className="flex items-center gap-2">
           <button
             onClick={handleDownloadPDF}
@@ -84,157 +146,52 @@ export const PrintPreviewPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Template Selector Tabs */}
-      <div className="no-print flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl max-w-md mx-auto">
-        <button
-          onClick={() => setTemplate('58')}
-          className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-            template === '58'
-              ? 'bg-white dark:bg-slate-900 text-blue-600 shadow-xs'
-              : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-          }`}
-        >
-          Thermal 58mm
-        </button>
-        <button
-          onClick={() => setTemplate('80')}
-          className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-            template === '80'
-              ? 'bg-white dark:bg-slate-900 text-blue-600 shadow-xs'
-              : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-          }`}
-        >
-          Thermal 80mm
-        </button>
-        <button
-          onClick={() => setTemplate('a4')}
-          className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-            template === 'a4'
-              ? 'bg-white dark:bg-slate-900 text-blue-600 shadow-xs'
-              : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-          }`}
-        >
-          A4 Full Invoice
-        </button>
+      <div className="print-toolbar">
+        <span className="muted-label block mb-2">Document Type</span>
+        <div className="flex flex-wrap items-center gap-2">
+          {DOC_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => changeDocType(opt.value)}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${docType === opt.value
+                ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-900 dark:border-slate-100 shadow-xs'
+                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-400'}`}
+            >
+              {opt.icon}
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        {showComplimentaryHint && (
+          <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-semibold">
+            <AlertTriangle className="w-4 h-4" />
+            This job is COMPLIMENTARY (no payment required). Use the Complimentary document instead.
+          </div>
+        )}
       </div>
 
-      {/* Printable Area Wrapper (White paper background simulation) */}
-      <div className="flex justify-center bg-slate-200 dark:bg-slate-950 p-8 rounded-2xl shadow-inner min-h-[500px]">
-        <div
-          id="printable-content"
-          className="bg-white text-black shadow-2xl p-6 font-sans text-left transition-all"
-          style={{
-            width: template === '58' ? '220px' : template === '80' ? '302px' : '650px',
-            fontFamily: 'Arial, sans-serif'
-          }}
-        >
-          {/* Header Shop Info */}
-          <div style={{ textAlign: 'center', borderBottom: '2px dashed #000', paddingBottom: '10px', marginBottom: '10px' }}>
-            {settings.show_logo_on_receipt !== '0' && settings.logo_path && (
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '6px' }}>
-                <img src={settings.logo_path} alt="Logo" style={{ maxHeight: template === 'a4' ? '48px' : '36px', objectFit: 'contain' }} />
-              </div>
-            )}
-            <h2 style={{ fontSize: template === 'a4' ? '22px' : '16px', fontWeight: 'bold', margin: '0 0 2px 0' }}>
-              {settings.shop_name || 'ProTech Repair Center'}
-            </h2>
-            {settings.shop_slogan && (
-              <p style={{ fontSize: '10px', color: '#555', margin: '0 0 4px 0', fontStyle: 'italic' }}>
-                {settings.shop_slogan}
-              </p>
-            )}
-            <p style={{ fontSize: '11px', margin: '0 0 2px 0' }}>{settings.shop_address}</p>
-            <p style={{ fontSize: '11px', margin: '0', fontWeight: 'bold' }}>
-              Phone: {settings.shop_mobile}
-              {settings.shop_whatsapp && settings.shop_whatsapp !== settings.shop_mobile && ` | WA: ${settings.shop_whatsapp}`}
-            </p>
-          </div>
+      <div className="print-toolbar flex flex-wrap items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl">
+        {PAPER_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => setPaper(opt.value)}
+            className={`flex-1 min-w-[110px] py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${paper === opt.value
+              ? 'bg-white dark:bg-slate-900 text-blue-600 shadow-xs'
+              : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}
+          >
+            {opt.label}
+            <span className="block text-[10px] font-medium normal-case">{opt.desc}</span>
+          </button>
+        ))}
+      </div>
 
-          {/* Token Display Banner */}
-          <div style={{ textAlign: 'center', backgroundColor: '#f1f5f9', padding: '6px', borderRadius: '4px', marginBottom: '12px' }}>
-            <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', display: 'block' }}>Repair Token #</span>
-            <span style={{ fontSize: template === 'a4' ? '24px' : '18px', fontWeight: 'bold', fontFamily: 'monospace' }}>
-              {job.token_number}
-            </span>
-          </div>
-
-          {/* Details Table */}
-          <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse', marginBottom: '12px' }}>
-            <tbody>
-              <tr>
-                <td style={{ padding: '3px 0', color: '#555' }}>Customer:</td>
-                <td style={{ padding: '3px 0', textAlign: 'right', fontWeight: 'bold' }}>{job.customer_name}</td>
-              </tr>
-              <tr>
-                <td style={{ padding: '3px 0', color: '#555' }}>Phone:</td>
-                <td style={{ padding: '3px 0', textAlign: 'right' }}>{job.customer_mobile}</td>
-              </tr>
-              <tr>
-                <td style={{ padding: '3px 0', color: '#555' }}>Device Type:</td>
-                <td style={{ padding: '3px 0', textAlign: 'right', textTransform: 'uppercase', fontWeight: 'bold' }}>{job.job_type}</td>
-              </tr>
-              <tr>
-                <td style={{ padding: '3px 0', color: '#555' }}>Model:</td>
-                <td style={{ padding: '3px 0', textAlign: 'right' }}>{job.model || 'N/A'}</td>
-              </tr>
-              <tr>
-                <td style={{ padding: '3px 0', color: '#555' }}>Serial #:</td>
-                <td style={{ padding: '3px 0', textAlign: 'right', fontFamily: 'monospace' }}>{job.serial_no || 'N/A'}</td>
-              </tr>
-              <tr>
-                <td style={{ padding: '3px 0', color: '#555' }}>Receive Date:</td>
-                <td style={{ padding: '3px 0', textAlign: 'right' }}>{formatDate(job.receive_date)}</td>
-              </tr>
-              <tr>
-                <td style={{ padding: '3px 0', color: '#555' }}>Return Date:</td>
-                <td style={{ padding: '3px 0', textAlign: 'right', fontWeight: 'bold' }}>{formatDate(job.return_date)}</td>
-              </tr>
-              <tr>
-                <td style={{ padding: '3px 0', color: '#555' }}>Charger Included:</td>
-                <td style={{ padding: '3px 0', textAlign: 'right' }}>{job.has_charger ? 'YES' : 'NO'}</td>
-              </tr>
-            </tbody>
-          </table>
-
-          {/* Fault Symptoms */}
-          <div style={{ borderTop: '1px solid #ddd', padding: '8px 0', marginBottom: '12px' }}>
-            <span style={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase', color: '#555', display: 'block' }}>Reported Symptoms:</span>
-            <p style={{ fontSize: '11px', margin: '4px 0 0 0', fontStyle: 'italic' }}>{job.symptoms || 'N/A'}</p>
-          </div>
-
-          {/* Charges Banner */}
-          <div style={{ borderTop: '2px solid #000', borderBottom: '2px solid #000', padding: '8px 0', margin: '12px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '12px', fontWeight: 'bold' }}>Total Repair Charges:</span>
-            <span style={{ fontSize: '16px', fontWeight: 'bold' }}>{formatCurrency(job.charges)}</span>
-          </div>
-
-          {/* Status Badge */}
-          <div style={{ textAlign: 'center', marginBottom: '12px' }}>
-            <span style={{ fontSize: '11px', fontWeight: 'bold', padding: '3px 8px', border: '1px solid #000', borderRadius: '4px', textTransform: 'uppercase' }}>
-              Payment: {job.payment_status} | Delivery: {job.deliver_status}
-            </span>
-          </div>
-
-          {/* Terms and conditions */}
-          {settings.receipt_terms && (
-            <div style={{ fontSize: '9px', color: '#555', borderTop: '1px dotted #ccc', paddingTop: '6px', marginBottom: '10px', whiteSpace: 'pre-line' }}>
-              {settings.receipt_terms}
-            </div>
-          )}
-
-          {/* QR Code and Footer Signature */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px dashed #000', paddingTop: '10px', marginTop: '10px' }}>
-            <div style={{ flex: 1, fontSize: '9px', color: '#444' }}>
-              <p style={{ margin: '0 0 2px 0' }}>{settings.receipt_footer_msg || '* Please present this ticket at collection.'}</p>
-            </div>
-            {settings.show_qr_on_receipt !== '0' && (
-              <div style={{ textAlign: 'right', marginLeft: '10px' }}>
-                <QRCodeDisplay value={job.token_number} size={template === 'a4' ? 64 : 48} />
-              </div>
-            )}
-          </div>
+      <div className="print-sheet flex justify-center bg-slate-200 dark:bg-slate-950 p-4 sm:p-8 rounded-2xl shadow-inner min-h-[420px]">
+        <div className={paper === 'a4' ? 'shadow-2xl' : 'shadow-md'}>
+          <InvoiceDocument data={invoiceData} />
         </div>
       </div>
     </div>
   );
 };
+
+export default PrintPreviewPage;

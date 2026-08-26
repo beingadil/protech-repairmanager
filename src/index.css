@@ -175,16 +175,17 @@
     print-color-adjust: exact !important;
   }
 
-  aside, header, nav, footer, button, .no-print, .screen-only, #sidebar, #top-header {
+  aside, header, nav, footer, button, .no-print, .screen-only, .print-toolbar, #sidebar, #top-header {
     display: none !important;
   }
 
+  /* The only element printed is the prepared document inside #printable-content.
+     Its physical width is driven by the active paper template (inline mm width). */
   #printable-content {
     display: block !important;
     position: static !important;
     visibility: visible !important;
-    width: 100% !important;
-    max-width: 190mm !important;
+    box-sizing: border-box !important;
     margin: 0 auto !important;
     padding: 0 !important;
     background: #ffffff !important;
@@ -199,10 +200,24 @@
     visibility: visible !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    box-sizing: border-box;
   }
 
-  @page {
-    size: portrait;
-    margin: 6mm 8mm;
+  /* The gray "paper simulation" stage must not print — only the white document does. */
+  .print-sheet {
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    min-height: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    display: block !important;
   }
+  .print-sheet > div { box-shadow: none !important; }
+
+  /* Fallback physical sizes (the @page rule for the active paper size is injected
+     dynamically by the print preview page — see PrintPreviewPage.tsx). */
+  html[data-paper='a4'] #printable-content { width: 188mm !important; }
+  html[data-paper='80'] #printable-content { width: 76mm !important; }
+  html[data-paper='58'] #printable-content { width: 56mm !important; }
 }

@@ -19,6 +19,8 @@ export interface Job {
   receive_date: string;
   return_date: string;
   charges: number;
+  /** Amount waived / discounted on the original repair charge (PKR). 0 = none. */
+  discount?: number;
   has_charger: number; // 0 = No, 1 = Yes
   payment_status: PaymentStatus;
   deliver_status: DeliverStatus;
