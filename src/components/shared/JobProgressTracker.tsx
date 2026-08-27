@@ -42,11 +42,18 @@ export const JobProgressTracker: React.FC<JobProgressTrackerProps> = ({
   const isDelivered = job.deliver_status === 'delivered';
   const overdue = isOverdue(job.return_date, job.deliver_status);
 
-  // Determine current active step: 1 = Received, 2 = In Repair, 3 = Ready, 4 = Delivered
-  // If delivered -> Step 4
-  // If pending & overdue -> Step 3 (Attention needed)
-  // Default pending -> Step 2 or 3
-  const currentStep: number = isDelivered ? 4 : overdue ? 3 : 2;
+  // Derive the timeline state from the ACTUAL deliver_status value so that
+  // quick status changes from the job list (or edit page) are reflected here.
+  // Lifecycle: pending → in_progress → in_diagnostics → ready → delivered
+  const status = job.deliver_status;
+  const atBench = status === 'in_progress' || status === 'in_diagnostics';
+  const isReady = status === 'ready';
+
+  // Step 1 is always completed once the job exists; 'pending' means the job is
+  // received but work has not started yet, so Intake is the current stage.
+  // Step 2 covers the bench phase (in_progress / in_diagnostics).
+  // Step 3 is the active stage only when status === 'ready' (or overdue attention).
+  // Step 4 completes on delivery.
 
   const steps: TimelineStep[] = [
     {
@@ -55,23 +62,23 @@ export const JobProgressTracker: React.FC<JobProgressTrackerProps> = ({
       subtitle: formatDate(job.receive_date),
       icon: ClipboardCheck,
       completed: true,
-      current: currentStep === 1
+      current: status === 'pending'
     },
     {
       id: 2,
       title: 'In Diagnostic Repair',
       subtitle: 'Bench testing & service',
       icon: Wrench,
-      completed: currentStep > 2,
-      current: currentStep === 2
+      completed: isReady || isDelivered,
+      current: atBench
     },
     {
       id: 3,
-      title: overdue ? 'Overdue Return' : 'Ready for Pickup',
+      title: overdue && !isReady && !isDelivered ? 'Overdue Return' : 'Ready for Pickup',
       subtitle: `Target: ${formatDate(job.return_date)}`,
-      icon: overdue ? AlertTriangle : PackageCheck,
-      completed: currentStep > 3,
-      current: currentStep === 3,
+      icon: overdue && !isReady && !isDelivered ? AlertTriangle : PackageCheck,
+      completed: isDelivered,
+      current: isReady || (overdue && !atBench),
       isOverdue: overdue
     },
     {
@@ -80,7 +87,7 @@ export const JobProgressTracker: React.FC<JobProgressTrackerProps> = ({
       subtitle: isDelivered ? 'Delivered & Closed' : 'Pending Customer Pickup',
       icon: UserCheck,
       completed: isDelivered,
-      current: currentStep === 4
+      current: isDelivered
     }
   ];
 
