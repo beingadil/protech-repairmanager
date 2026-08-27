@@ -1,7 +1,7 @@
 {
   "name": "protech-repair-manager",
   "private": true,
-  "version": "1.1.8",
+  "version": "1.1.9",
   "description": "Offline-first PC, Laptop, Industrial Equipment & Repair Shop Management Application with local SQLite persistence",
   "author": "ProTech Services",
   "license": "UNLICENSED",
