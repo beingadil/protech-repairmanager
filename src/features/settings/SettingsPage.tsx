@@ -46,9 +46,10 @@ import { useTheme } from '../../hooks/useTheme';
 import { resetDatabaseToProduction, exportDatabaseBinary, restoreDatabaseBinary, query } from '../../lib/db';
 import { ProTechLogo } from '../../components/shared/ProTechLogo';
 import { SyncSettingsComponent } from '../../components/sync/SyncSettingsComponent';
+import { InvoiceSettingsPanel } from './InvoiceSettingsPanel';
 import { exportJobsToCSV, exportCustomersToCSV, exportLedgerToCSV, exportInventoryToCSV } from '../../lib/export-utils';
 
-type SettingsTab = 'identity' | 'receipt' | 'workflow' | 'users' | 'notifications' | 'backup';
+type SettingsTab = 'identity' | 'receipt' | 'invoice' | 'workflow' | 'users' | 'notifications' | 'backup';
 
 export const SettingsPage: React.FC = () => {
   const { settings, updateSettingsBatch, updateSetting } = useSettingsStore();
@@ -306,6 +307,7 @@ export const SettingsPage: React.FC = () => {
         {[
           { id: 'identity', label: 'Shop Identity', icon: Store },
           { id: 'receipt', label: 'Receipt & Printing', icon: Printer },
+          { id: 'invoice', label: 'Invoice Design', icon: FileText },
           { id: 'workflow', label: 'Workflow & Defaults', icon: Wrench },
           { id: 'users', label: 'Staff Accounts', icon: Users, badge: users.length },
           { id: 'notifications', label: 'SMS & WhatsApp', icon: MessageSquare },
@@ -336,6 +338,14 @@ export const SettingsPage: React.FC = () => {
           );
         })}
       </div>
+
+      {/* Invoice Design tab */}
+      {activeTab === 'invoice' && (
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-4">Invoice Design</h3>
+          <InvoiceSettingsPanel />
+        </div>
+      )}
 
       {/* Tab 1: Shop Identity & Branding */}
       {activeTab === 'identity' && (

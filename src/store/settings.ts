@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import { AppSettings } from '../types/settings';
 import { query, execute, getNextPTSToken } from '../lib/db';
+import {
+  InvoiceSettings,
+  parseInvoiceSettings,
+  serializeInvoiceSettings,
+  DEFAULT_INVOICE_SETTINGS
+} from '../lib/invoice-settings';
 
 interface SettingsState {
   settings: AppSettings;
@@ -10,6 +16,8 @@ interface SettingsState {
   updateSettingsBatch: (newSettings: Partial<AppSettings>) => Promise<void>;
   setTheme: (theme: 'dark' | 'light') => Promise<void>;
   getNextTokenNumber: () => Promise<string>;
+  getInvoiceSettings: () => InvoiceSettings;
+  updateInvoiceSettings: (config: InvoiceSettings) => Promise<void>;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -29,6 +37,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   receipt_terms: '1. Repaired equipment must be collected within 30 days of completion.\n2. We are not responsible for any software or data loss during hardware repair.\n3. Warranty void if warranty seal or sticker is broken or tampered with.',
   show_qr_on_receipt: '1',
   show_logo_on_receipt: '1',
+  invoice_settings: '',
   default_warranty_days: '30',
   default_turnaround_days: '2',
   token_prefix: 'PTS',
@@ -108,5 +117,25 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   getNextTokenNumber: async () => {
     return await getNextPTSToken();
+  },
+
+  getInvoiceSettings: () => {
+    const raw = get().settings.invoice_settings;
+    return raw ? parseInvoiceSettings(raw) : { ...JSON.parse(JSON.stringify(DEFAULT_INVOICE_SETTINGS)) };
+  },
+
+  updateInvoiceSettings: async (config) => {
+    const serialized = serializeInvoiceSettings(config);
+    set((state) => ({
+      settings: { ...state.settings, invoice_settings: serialized }
+    }));
+    try {
+      await execute('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', [
+        'invoice_settings',
+        serialized
+      ]);
+    } catch (err) {
+      console.error('Failed to save invoice settings:', err);
+    }
   }
 }));

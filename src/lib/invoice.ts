@@ -1,6 +1,13 @@
 import { Job } from '../types/job';
 import { FinancialTransaction } from '../types/payment';
 import { AppSettings } from '../types/settings';
+import {
+  InvoiceSettings,
+  InvoiceSectionToggles,
+  DEFAULT_SECTIONS,
+  getEffectiveSections,
+  PaperKey
+} from './invoice-settings';
 
 /**
  * Shared invoice / receipt data model.
@@ -71,6 +78,8 @@ export interface InvoiceData {
     isComplimentary: boolean;
   };
   issuedAt: string;
+  /** Effective section toggles for the selected paper (from invoice settings). */
+  invCfg?: InvoiceSectionToggles;
 }
 
 export function clampNonNegative(n: number): number {
@@ -125,7 +134,8 @@ export function buildInvoiceData(
   settings: Partial<AppSettings>,
   transactions: FinancialTransaction[],
   docType: InvoiceDocType,
-  paper: InvoicePaper
+  paper: InvoicePaper,
+  invoiceSettings?: InvoiceSettings
 ): InvoiceData {
   const txList: Array<Pick<FinancialTransaction, 'type' | 'amount' | 'token_number'>> =
     (transactions || []).map((t) => ({
@@ -134,6 +144,9 @@ export function buildInvoiceData(
       token_number: t.token_number || null
     }));
   const payment = computePaymentSummary(job, txList);
+  const invCfg = invoiceSettings
+    ? getEffectiveSections(invoiceSettings, paper as PaperKey)
+    : { ...DEFAULT_SECTIONS };
 
   // Latest credit transaction on this job token (when printed on a payment receipt)
   const tokenName = (job.token_number || '').trim();
@@ -185,6 +198,7 @@ export function buildInvoiceData(
       day: '2-digit',
       month: '2-digit',
       year: 'numeric'
-    })
+    }),
+    invCfg
   };
 }

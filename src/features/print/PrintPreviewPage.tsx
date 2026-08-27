@@ -32,7 +32,8 @@ export const PrintPreviewPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { settings } = useSettingsStore();
+  const { settings, getInvoiceSettings } = useSettingsStore();
+  const invSettings = useMemo(() => getInvoiceSettings(), [settings.invoice_settings]);
 
   const [job, setJob] = useState<Job | null>(null);
   const [txList, setTxList] = useState<FinancialTransaction[]>([]);
@@ -101,8 +102,8 @@ export const PrintPreviewPage: React.FC = () => {
 
   const invoiceData = useMemo(() => {
     if (!job) return null;
-    return buildInvoiceData(job, settings, txList, docType, paper);
-  }, [job, settings, txList, docType, paper]);
+    return buildInvoiceData(job, settings, txList, docType, paper, invSettings);
+  }, [job, settings, txList, docType, paper, invSettings]);
 
   if (!job || !invoiceData) {
     return <div className="py-20 text-center text-slate-400">Loading print preview...</div>;

@@ -15,6 +15,8 @@ export interface AppSettings {
   receipt_terms?: string;
   show_qr_on_receipt?: '0' | '1';
   show_logo_on_receipt?: '0' | '1';
+  /** JSON string of the invoice customization config (src/lib/invoice-settings.ts). */
+  invoice_settings?: string;
   default_warranty_days?: string;
   default_turnaround_days?: string;
   token_prefix?: string;

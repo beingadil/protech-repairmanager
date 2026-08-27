@@ -2,6 +2,8 @@
 import { InvoiceData, InvoicePaper } from '../../lib/invoice';
 import { formatCurrency, formatDate } from '../../lib/utils';
 import { QRCodeDisplay } from '../../components/shared/QRCodeDisplay';
+import { DEFAULT_SECTIONS, InvoiceSectionToggles } from '../../lib/invoice-settings';
+
 
 /**
  * Pure presentational layer of the printing engine.
@@ -132,6 +134,7 @@ export const InvoiceDocument: React.FC<Props> = ({ data }) => {
   const thermal = data.paper === '80' || data.paper === '58';
 
   const qrVisible = s.showQr;
+  const cfg: InvoiceSectionToggles = data.invCfg || { ...DEFAULT_SECTIONS };
   const f = (n: number) => formatCurrency(n);
 
   return (
@@ -153,7 +156,7 @@ export const InvoiceDocument: React.FC<Props> = ({ data }) => {
           paddingBottom: '8px'
         }}
       >
-        {s.showLogo && s.logoPath && (
+        {cfg.logo && s.showLogo && s.logoPath && (
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '4px' }}>
             <img
               src={s.logoPath}
@@ -162,23 +165,27 @@ export const InvoiceDocument: React.FC<Props> = ({ data }) => {
             />
           </div>
         )}
-        <div style={{ fontSize: txt(p.title), fontWeight: 800, letterSpacing: '0.5px' }}>
-          {s.name}
-        </div>
-        {s.slogan && (
+        {cfg.name && (
+          <div style={{ fontSize: txt(p.title), fontWeight: 800, letterSpacing: '0.5px' }}>
+            {s.name}
+          </div>
+        )}
+        {cfg.tagline && s.slogan && (
           <div style={{ fontSize: txt(p.base - 1), fontStyle: 'italic', color: COLORS.muted }}>
             {s.slogan}
           </div>
         )}
-        {s.address && (
+        {cfg.address && s.address && (
           <div style={{ fontSize: txt(p.base - 2), marginTop: '3px', color: '#444' }}>
             {s.address}
           </div>
         )}
-        <div style={{ fontSize: txt(p.base - 1), fontWeight: 700, marginTop: '2px' }}>
-          {s.phone && `Phone: ${s.phone}`}
-          {s.whatsapp && s.whatsapp !== s.phone ? `  |  WhatsApp: ${s.whatsapp}` : ''}
-        </div>
+        {cfg.phone && (
+          <div style={{ fontSize: txt(p.base - 1), fontWeight: 700, marginTop: '2px' }}>
+            {s.phone && `Phone: ${s.phone}`}
+            {s.whatsapp && s.whatsapp !== s.phone ? `  |  WhatsApp: ${s.whatsapp}` : ''}
+          </div>
+        )}
       </div>
 
       <div
@@ -193,38 +200,48 @@ export const InvoiceDocument: React.FC<Props> = ({ data }) => {
         <div style={{ fontSize: txt(p.token), fontWeight: 800, textTransform: 'uppercase' }}>
           {isWaiver ? 'Complimentary Waiver' : isRepair ? 'Repair Job Ticket' : 'Payment Receipt'}
         </div>
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: txt(p.base - 1), fontWeight: 700 }}>
-            Token: <span style={{ fontFamily: 'monospace' }}>{r.token}</span>
+        {(cfg.token || cfg.date) && (
+          <div style={{ textAlign: 'right' }}>
+            {cfg.token && (
+              <div style={{ fontSize: txt(p.base - 1), fontWeight: 700 }}>
+                Token: <span style={{ fontFamily: 'monospace' }}>{r.token}</span>
+              </div>
+            )}
+            {cfg.date && (
+              <div style={{ fontSize: txt(p.base - 2), color: COLORS.muted }}>
+                {data.issuedAt ? `Date: ${data.issuedAt}` : ''}
+              </div>
+            )}
           </div>
-          <div style={{ fontSize: txt(p.base - 2), color: COLORS.muted }}>
-            {data.issuedAt ? `Date: ${data.issuedAt}` : ''}
-          </div>
-        </div>
+        )}
       </div>
 
       <SectionBox title="Bill To / Customer">
-        <FieldRow label="Customer" value={c.name} bold />
-        {c.mobile && <FieldRow label="Phone" value={c.mobile} />}
-        {c.address && <FieldRow label="Address" value={c.address} />}
+        {cfg.customerName && <FieldRow label="Customer" value={c.name} bold />}
+        {cfg.customerPhone && c.mobile && <FieldRow label="Phone" value={c.mobile} />}
+        {cfg.customerAddress && c.address && <FieldRow label="Address" value={c.address} />}
       </SectionBox>
 
       {isRepair && (
         <SectionBox title="Repair Job Details">
-          <FieldRow label="Device" value={r.deviceType} />
-          <FieldRow label="Model" value={r.model} />
-          {r.serialNo !== '\u2014' && <FieldRow label="Serial #" value={r.serialNo} />}
-          {r.ram !== '\u2014' && <FieldRow label="RAM" value={r.ram} />}
-          {r.hard !== '\u2014' && <FieldRow label="Storage" value={r.hard} />}
-          {r.processor !== '\u2014' && <FieldRow label="Processor" value={r.processor} />}
-          <FieldRow label="Receive Date" value={r.receiveDate ? formatDate(r.receiveDate) : '\u2014'} />
-          <FieldRow
-            label="Expected Return"
-            value={r.returnDate ? formatDate(r.returnDate) : '\u2014'}
-            bold
-          />
-          <FieldRow label="Charger" value={r.hasCharger ? 'YES' : 'NO'} />
-          {r.symptoms && (
+          {cfg.device && <FieldRow label="Device" value={r.deviceType} />}
+          {cfg.model && <FieldRow label="Model" value={r.model} />}
+          {cfg.serial && r.serialNo !== '\u2014' && <FieldRow label="Serial #" value={r.serialNo} />}
+          {cfg.specs && r.ram !== '\u2014' && <FieldRow label="RAM" value={r.ram} />}
+          {cfg.specs && r.hard !== '\u2014' && <FieldRow label="Storage" value={r.hard} />}
+          {cfg.specs && r.processor !== '\u2014' && <FieldRow label="Processor" value={r.processor} />}
+          {cfg.receiveDate && (
+            <FieldRow label="Receive Date" value={r.receiveDate ? formatDate(r.receiveDate) : '\u2014'} />
+          )}
+          {cfg.returnDate && (
+            <FieldRow
+              label="Expected Return"
+              value={r.returnDate ? formatDate(r.returnDate) : '\u2014'}
+              bold
+            />
+          )}
+          {cfg.charger && <FieldRow label="Charger" value={r.hasCharger ? 'YES' : 'NO'} />}
+          {cfg.symptoms && r.symptoms && (
             <div style={{ marginTop: '4px', borderTop: `1px solid ${COLORS.line}`, paddingTop: '4px' }}>
               <div style={{ fontSize: txt(p.base - 2), fontWeight: 700, textTransform: 'uppercase', color: COLORS.muted }}>
                 Reported Symptoms
@@ -236,7 +253,7 @@ export const InvoiceDocument: React.FC<Props> = ({ data }) => {
           )}
         </SectionBox>
       )}
-      {isRepair && (
+      {isRepair && cfg.estimatedCharges && (
         <div
           style={{
             marginTop: '7px',
@@ -273,8 +290,9 @@ export const InvoiceDocument: React.FC<Props> = ({ data }) => {
             <span>Description</span>
             <span>Amount</span>
           </div>
-          <FieldRow label="Repair Charges" value={f(pay.charges)} />
-          {pay.discount > 0 && <FieldRow label="Discount" value={`\u2212 ${f(pay.discount)}`} />}
+          {cfg.chargesLine && <FieldRow label="Repair Charges" value={f(pay.charges)} />}
+          {cfg.discount && pay.discount > 0 && <FieldRow label="Discount" value={`\u2212 ${f(pay.discount)}`} />}
+          {cfg.netAmount && (
           <div
             style={{
               display: 'flex',
@@ -290,18 +308,21 @@ export const InvoiceDocument: React.FC<Props> = ({ data }) => {
             <span>NET AMOUNT</span>
             <span>{f(pay.netAmount)}</span>
           </div>
-          <FieldRow label="Paid" value={f(pay.paid)} bold />
+          )}
+          {cfg.paid && <FieldRow label="Paid" value={f(pay.paid)} bold />}
+          {cfg.balance && (
           <FieldRow
             label="Balance"
             value={f(pay.balance)}
             bold
             valueColor={pay.balance > 0 ? COLORS.red : COLORS.green}
           />
+          )}
 
-          {isPayment && (
+          {isPayment && (cfg.paymentMethod || cfg.paymentDate) && (
             <div style={{ marginTop: '4px', borderTop: `1px solid ${COLORS.line}`, paddingTop: '4px' }}>
-              <FieldRow label="Payment Method" value={data.paymentInfo.latestMethod} />
-              {data.paymentInfo.latestDate && (
+              {cfg.paymentMethod && <FieldRow label="Payment Method" value={data.paymentInfo.latestMethod} />}
+              {cfg.paymentDate && data.paymentInfo.latestDate && (
                 <FieldRow label="Payment Date" value={formatDate(data.paymentInfo.latestDate)} />
               )}
             </div>
@@ -309,7 +330,7 @@ export const InvoiceDocument: React.FC<Props> = ({ data }) => {
         </SectionBox>
       )}
 
-      {s.terms && (
+      {cfg.terms && s.terms && (
         <SectionBox title="Terms & Conditions">
           <div style={{ fontSize: txt(p.base - 2), color: '#444', whiteSpace: 'pre-line', wordBreak: 'break-word' }}>
             {s.terms}
@@ -330,16 +351,16 @@ export const InvoiceDocument: React.FC<Props> = ({ data }) => {
       >
         <div style={{ flex: 1, fontSize: txt(p.base - 3), color: '#444', minWidth: 0 }}>
           <div style={{ whiteSpace: 'pre-line', wordBreak: 'break-word' }}>
-            {s.footerMsg || 'Thank you for choosing ProTech Services.'}
+            {cfg.thankYou && (s.footerMsg || 'Thank you for choosing ProTech Services.')}
           </div>
         </div>
-        {qrVisible && (
+        {cfg.qr && qrVisible && (
           <div style={{ textAlign: 'right', marginLeft: '6px', flexShrink: 0 }}>
             <QRCodeDisplay value={r.token} size={p.qr} />
           </div>
         )}
       </div>
-      {!qrVisible && (
+      {!cfg.qr && (
         <div style={{ fontSize: txt(p.base - 3), color: '#888', marginTop: '4px' }}>{s.name}</div>
       )}
     </div>
