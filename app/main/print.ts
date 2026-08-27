@@ -1,4 +1,4 @@
-﻿import { BrowserWindow, dialog, ipcMain } from "electron";
+import { BrowserWindow, dialog, ipcMain } from "electron";
 import { writeFile } from "node:fs/promises";
 
 export type NativePaperFormat = "a4" | "thermal80" | "thermal58";

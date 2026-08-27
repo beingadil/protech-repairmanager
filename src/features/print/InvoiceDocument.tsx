@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { InvoiceData, InvoicePaper } from '../../lib/invoice';
 import { formatCurrency, formatDate } from '../../lib/utils';
 import { QRCodeDisplay } from '../../components/shared/QRCodeDisplay';

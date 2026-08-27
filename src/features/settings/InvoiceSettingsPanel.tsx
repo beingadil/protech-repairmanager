@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { RotateCcw, Save, Sparkles } from 'lucide-react';
 import { useSettingsStore } from '../../store/settings';
