@@ -53,9 +53,11 @@ export const TopBar: React.FC = () => {
       {/* Left: Sidebar toggle + Page Title */}
       <div className="flex items-center gap-4">
         <button
+          type="button"
           onClick={toggleSidebar}
           className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
           title="Toggle Navigation Sidebar"
+          aria-label="Toggle Navigation Sidebar"
         >
           <Menu className="w-5 h-5" />
         </button>
@@ -115,7 +117,9 @@ export const TopBar: React.FC = () => {
 
         {/* Cmd+K Search trigger */}
         <button
+          type="button"
           onClick={() => setCommandPaletteOpen(true)}
+          aria-label="Search jobs"
           className="flex items-center gap-2 px-3 py-1.5 bg-slate-100/90 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-xl text-xs font-medium border border-slate-200 dark:border-slate-700 transition-colors w-40 md:w-52 justify-between cursor-pointer"
         >
           <div className="flex items-center gap-2 truncate">
@@ -129,9 +133,11 @@ export const TopBar: React.FC = () => {
 
         {/* Theme Toggle Button */}
         <button
+          type="button"
           onClick={handleThemeToggle}
           className="p-2 rounded-xl bg-slate-100/90 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors border border-slate-200 dark:border-slate-700 cursor-pointer shadow-2xs"
           title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          aria-label={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
         >
           {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-600 dark:text-slate-300" />}
         </button>
@@ -154,9 +160,11 @@ export const TopBar: React.FC = () => {
           </div>
 
           <button
+            type="button"
             onClick={handleLogout}
             className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50 transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
             title="Log out from terminal session"
+            aria-label="Log out"
           >
             <LogOut className="w-4 h-4" />
             <span className="hidden sm:inline text-xs font-bold">Logout</span>

@@ -94,6 +94,8 @@ export const Sidebar: React.FC = () => {
         <div className="p-3">
           <NavLink
             to="/jobs/new"
+            title={!isSidebarOpen ? 'New Repair Job' : undefined}
+            aria-label="New Repair Job"
             className={`btn-primary w-full ${!isSidebarOpen && 'px-0 justify-center'}`}
           >
             <PlusCircle className="w-4 h-4 shrink-0" />
@@ -102,7 +104,7 @@ export const Sidebar: React.FC = () => {
         </div>
 
         {/* Navigation Links */}
-        <nav className="px-2 space-y-1">
+        <nav className="px-2 space-y-1" aria-label="Main navigation">
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -110,6 +112,8 @@ export const Sidebar: React.FC = () => {
                 key={item.path}
                 to={item.path}
                 end={item.path === '/'}
+                title={!isSidebarOpen ? item.label : undefined}
+                aria-label={item.label}
                 className={({ isActive }) =>
                   `flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                     isActive
@@ -140,7 +144,10 @@ export const Sidebar: React.FC = () => {
       {/* Bottom Theme Toggle & Info */}
       <div className="p-3 border-t border-slate-200 dark:border-slate-800 space-y-2">
         <button
+          type="button"
           onClick={toggleTheme}
+          title={!isSidebarOpen ? (isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode') : undefined}
+          aria-label={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200/80 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700/60 transition-colors text-xs font-semibold cursor-pointer shadow-2xs"
         >
           <div className="flex items-center gap-2">
