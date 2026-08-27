@@ -68,17 +68,23 @@ export async function saveDocumentPdf(
   data: InvoiceData,
   fileName: string
 ): Promise<string | null> {
-  const html = buildStandaloneHtml(data);
-  const format = paperToFormat(data.paper);
   if (!isNative()) {
+    // Browser/dev fallback: capture the on-screen invoice element to PDF.
     const { exportElementToPDF } = await import('./print-utils');
     await exportElementToPDF('printable-content', fileName);
-    return null;
+    return null; // browser save dialog handled by jsPDF
   }
-  const res = await window.prodata!.print.savePdf({ html, format, fileName });
-  if (res.canceled) return null;
-  if (!res.ok || !res.filePath) throw new Error(res.error || 'PDF generation failed.');
-  return res.filePath;
+  const html = buildStandaloneHtml(data);
+  const format = paperToFormat(data.paper);
+  try {
+    const res = await window.prodata!.print.savePdf({ html, format, fileName });
+    if (res.canceled) return null;
+    if (!res.ok || !res.filePath) throw new Error(res.error || 'PDF generation failed.');
+    return res.filePath;
+  } catch (err) {
+    // Surface a clear error so the user knows the save failed
+    throw new Error(`PDF save failed: ${err instanceof Error ? err.message : String(err)}`);
+  }
 }
 
 function triggerFallbackPrint(): void {

@@ -97,21 +97,41 @@ export const EnhancedCustomerSupplierSelect: React.FC<EnhancedCustomerSupplierSe
   const loadParties = async () => {
     setIsLoading(true);
     try {
-      const sql = `
-        SELECT 
-          c.*,
-          COUNT(j.id) as total_jobs,
-          SUM(CASE WHEN j.deliver_status = 'pending' AND j.deleted_at IS NULL THEN 1 ELSE 0 END) as pending_jobs,
-          SUM(CASE WHEN j.deliver_status = 'delivered' AND j.deleted_at IS NULL THEN 1 ELSE 0 END) as delivered_jobs
-        FROM customers c
-        LEFT JOIN jobs j ON c.id = j.customer_id AND j.deleted_at IS NULL
-        GROUP BY c.id
-        ORDER BY c.name ASC
-      `;
-      const res = await query<Customer>(sql);
-      setParties(res);
+      // Step 1: Load all customers/suppliers
+      const customers = await query<Customer>(
+        'SELECT id, name, mobile, address, party_type, created_at, updated_at FROM customers ORDER BY name ASC'
+      );
+
+      // Step 2: Load job counts per customer (separate query for robustness)
+      let jobCounts: Array<{ customer_id: number; total_jobs: number; pending_jobs: number; delivered_jobs: number }> = [];
+      try {
+        jobCounts = await query(
+          `SELECT customer_id,
+                  COUNT(*) as total_jobs,
+                  SUM(CASE WHEN deliver_status = 'pending' THEN 1 ELSE 0 END) as pending_jobs,
+                  SUM(CASE WHEN deliver_status = 'delivered' THEN 1 ELSE 0 END) as delivered_jobs
+           FROM jobs WHERE deleted_at IS NULL GROUP BY customer_id`
+        );
+      } catch {
+        // jobs table might be empty or missing — non-fatal
+      }
+
+      // Merge job counts into customer records
+      const countsMap = new Map(jobCounts.map((jc) => [jc.customer_id, jc]));
+      const merged = customers.map((c) => {
+        const counts = countsMap.get(c.id);
+        return {
+          ...c,
+          total_jobs: counts?.total_jobs ?? 0,
+          pending_jobs: counts?.pending_jobs ?? 0,
+          delivered_jobs: counts?.delivered_jobs ?? 0
+        };
+      });
+
+      setParties(merged);
     } catch (e) {
       console.error('Failed to load customers/suppliers:', e);
+      toast.error('Failed to load saved customers. Please try again.');
     } finally {
       setIsLoading(false);
     }

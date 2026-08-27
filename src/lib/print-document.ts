@@ -86,8 +86,11 @@ export function buildStandaloneHtml(data: InvoiceData): string {
     font-family: "Segoe UI", Roboto, Arial, sans-serif;
     margin: 0;
     padding: ${format === 'a4' ? '0' : '2mm'};
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
   }
-  .doc-root { display: block; }
+  .doc-root { display: flex; flex-direction: column; align-items: center; width: 100%; }
   img, svg { max-width: 100%; }
 </style>
 </head>

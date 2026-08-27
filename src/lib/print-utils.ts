@@ -4,7 +4,20 @@ import jsPDF from 'jspdf';
 const PX_TO_MM = 0.264583;
 
 /**
- * Export the prepared print document (#printable-content) to PDF.
+ * Find the printable content element. Tries the exact ID first, then falls
+ * back to the first element with data-paper attribute (the InvoiceDocument
+ * root) so the function works in both the old and new rendering paths.
+ */
+function findPrintableElement(elementId: string): HTMLElement | null {
+  return (
+    document.getElementById(elementId) ??
+    document.querySelector('[data-paper]') ??
+    document.querySelector('.doc-root')
+  );
+}
+
+/**
+ * Export the prepared print document to PDF.
  *
  * The page size is derived from the rendered element's physical dimensions so
  * that A4, 80mm and 58mm documents each produce a correctly-shaped PDF instead
@@ -14,10 +27,11 @@ export async function exportElementToPDF(
   elementId: string,
   fileName: string = 'ProTech_Invoice.pdf'
 ): Promise<void> {
-  const element = document.getElementById(elementId);
+  const element = findPrintableElement(elementId);
   if (!element) {
-    console.error(`Element with id ${elementId} not found for PDF export.`);
-    return;
+    throw new Error(
+      `Print preview element not found. Make sure the invoice is rendered on screen before saving.`
+    );
   }
 
   try {
@@ -32,14 +46,20 @@ export async function exportElementToPDF(
     const widthMm = Math.max(28, element.offsetWidth * PX_TO_MM);
     const heightMm = Math.max(40, element.offsetHeight * PX_TO_MM);
 
-    // Page exactly matches the document — no scaling / clipping.
+    // Center the image on a standard A4 page instead of using a tiny
+    // custom-sized page that many PDF viewers render at unreadable scale.
+    const pageWidth = Math.max(widthMm, 210); // at least A4 width
+    const pageHeight = Math.max(heightMm, 297); // at least A4 height
     const pdf = new jsPDF({
       orientation: widthMm >= heightMm ? 'l' : 'p',
       unit: 'mm',
-      format: [widthMm, heightMm]
+      format: 'a4'
     });
 
-    pdf.addImage(imgData, 'PNG', 0, 0, widthMm, heightMm);
+    // Center the invoice image on the page
+    const offsetX = (pageWidth - widthMm) / 2;
+    const offsetY = (pageHeight - heightMm) / 2;
+    pdf.addImage(imgData, 'PNG', offsetX, offsetY, widthMm, heightMm);
     pdf.save(fileName);
   } catch (error) {
     console.error('Error generating PDF:', error);
@@ -47,8 +67,6 @@ export async function exportElementToPDF(
   }
 }
 
-export function triggerPrintWindow(elementId: string): void {
-  // Direct window.print triggers native browser print dialog
-  // @media print CSS rules in index.css automatically isolate #printable-content
+export function triggerPrintWindow(_elementId: string): void {
   window.print();
 }
