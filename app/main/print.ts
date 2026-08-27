@@ -57,6 +57,33 @@ function pxToMicrons(px: number): number {
   return Math.round((px / 96) * 25_400);
 }
 
+/**
+ * Force the offscreen document to fully commit and lay out before printing.
+ *
+ * WITHOUT this, printToPDF can be called while Chromium is still committing the
+ * data: document, which reliably throws "Printing failed" — especially for A4
+ * (thermal formats happen to force a render round-trip via height measurement,
+ * A4 did not). We round-trip through the page and give it one frame + a small
+ * settle so fonts/images/layout are ready.
+ */
+async function waitForRendered(win: BrowserWindow): Promise<void> {
+  try {
+    await win.webContents.executeJavaScript(
+      `new Promise((resolve) => {
+         if (document.readyState === 'complete') {
+           requestAnimationFrame(() => resolve(true));
+         } else {
+           window.addEventListener('load', () => requestAnimationFrame(() => resolve(true)), { once: true });
+         }
+       })`,
+      true
+    );
+    await new Promise((r) => setTimeout(r, 60)); // settle fonts/images
+  } catch {
+    /* best-effort — printing below may still succeed */
+  }
+}
+
 async function measureThermalHeight(win: BrowserWindow): Promise<number | null> {
   try {
     const height = await win.webContents.executeJavaScript(
@@ -93,6 +120,7 @@ export function registerPrintHandlers(): void {
     let win: BrowserWindow | null = null;
     try {
       win = await loadDocument(html);
+      await waitForRendered(win);
 
       let pageSize: 'A4' | { width: number; height: number } = 'A4';
       if (format !== 'a4') {
@@ -141,6 +169,7 @@ export function registerPrintHandlers(): void {
       if (canceled || !filePath) return { ok: false, canceled: true };
 
       win = await loadDocument(html);
+      await waitForRendered(win);
 
       let pageSize: 'A4' | { width: number; height: number } = 'A4';
       if (format !== 'a4') {
@@ -152,11 +181,32 @@ export function registerPrintHandlers(): void {
         };
       }
 
-      const bytes = await win.webContents.printToPDF({
-        printBackground: true,
-        margins: { marginType: 'none' },
-        pageSize
-      });
+      let bytes: Buffer;
+      try {
+        bytes = await win.webContents.printToPDF({
+          printBackground: true,
+          margins: { marginType: 'none' },
+          pageSize
+        });
+      } catch (firstErr) {
+        // Some Windows/Electron builds reject a custom {width,height} pageSize
+        // or need the CSS @page to drive sizing. Retry with the document's own
+        // @page rule, then fall back to a plain A4 page so we always produce a
+        // usable PDF instead of failing with "Printing failed".
+        try {
+          bytes = await win.webContents.printToPDF({
+            printBackground: true,
+            preferCSSPageSize: true,
+            margins: { marginType: 'none' }
+          });
+        } catch {
+          bytes = await win.webContents.printToPDF({
+            printBackground: true,
+            margins: { marginType: 'none' },
+            pageSize: 'A4'
+          });
+        }
+      }
       await writeFile(filePath, bytes);
       return { ok: true, filePath };
     } finally {
