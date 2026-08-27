@@ -6,7 +6,13 @@ import { query } from '../../lib/db';
 import { Job } from '../../types/job';
 import { FinancialTransaction } from '../../types/payment';
 import { useSettingsStore } from '../../store/settings';
-import { exportElementToPDF, triggerPrintWindow } from '../../lib/print-utils';
+import {
+  printDocument,
+  saveDocumentPdf,
+  listPrinters,
+  getSavedPrinter,
+  savePrinterPreference
+} from '../../lib/print-service';
 import { buildInvoiceData, InvoiceDocType, InvoicePaper } from '../../lib/invoice';
 import { InvoiceDocument } from './InvoiceDocument';
 
@@ -30,6 +36,7 @@ export const PrintPreviewPage: React.FC = () => {
 
   const [job, setJob] = useState<Job | null>(null);
   const [txList, setTxList] = useState<FinancialTransaction[]>([]);
+  const [printers, setPrinters] = useState<Array<{ name: string; displayName: string; isDefault: boolean }>>([]);
 
   const [paper, setPaper] = useState<InvoicePaper>(
     (['58', '80', 'a4'].includes(settings.thermal_size) ? settings.thermal_size : '80') as InvoicePaper
@@ -94,12 +101,50 @@ export const PrintPreviewPage: React.FC = () => {
     return <div className="py-20 text-center text-slate-400">Loading print preview...</div>;
   }
 
-  const handlePrint = () => triggerPrintWindow('printable-content');
+  const handlePrint = async () => {
+    toast.info('Sending document to printer…');
+    try {
+      await printDocument(invoiceData);
+      // Native path resolves only on success (errors throw).
+      if ((window as unknown as { prodata?: { print?: unknown } }).prodata?.print) {
+        toast.success('Receipt sent to printer.');
+      }
+      // Browser fallback path returns without toasts (window.print dialog shown).
+    } catch (err) {
+      toast.error(`Unable to print: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  };
 
   const handleDownloadPDF = async () => {
-    toast.info('Generating PDF document...');
-    await exportElementToPDF('printable-content', `${job.token_number}_${docType}.pdf`);
-    toast.success('PDF downloaded successfully.');
+    const baseName = `${job.token_number}_${docType === 'payment_receipt' ? 'Payment-Receipt' : docType === 'waiver' ? 'Complimentary-Waiver' : 'Repair-Receipt'}`;
+    try {
+      const savedPath = await saveDocumentPdf(invoiceData, `${baseName}.pdf`);
+      if (savedPath) {
+        toast.success(`PDF saved: ${savedPath}`);
+      } else if ((window as unknown as { prodata?: { print?: unknown } }).prodata?.print) {
+        // Cancelled by user — silent is correct.
+      } else {
+        toast.success('PDF downloaded successfully.');
+      }
+    } catch (err) {
+      toast.error(`Unable to save PDF: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  };
+
+  // Persist the chosen printer per format so it is remembered across sessions.
+  useEffect(() => {
+    listPrinters().then(setPrinters);
+  }, []);
+
+  const currentPrinter =
+    getSavedPrinter(paper === 'a4' ? 'a4' : 'thermal') ??
+    printers.find((p) => p.isDefault)?.name ??
+    '';
+
+  const handlePrinterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (!e.target.value) return;
+    savePrinterPreference(paper === 'a4' ? 'a4' : 'thermal', e.target.value);
+    setPrinters((prev) => [...prev]); // refresh currentPrinter via render
   };
 
   const changeDocType = (t: InvoiceDocType) => {
@@ -184,6 +229,30 @@ export const PrintPreviewPage: React.FC = () => {
           </button>
         ))}
       </div>
+
+      {/* Printer selection — real Windows printers, remembered per format. */}
+      {printers.length > 0 && (
+        <div className="print-toolbar flex flex-wrap items-center gap-3 px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl">
+          <label className="muted-label" htmlFor="printer-select">
+            {paper === 'a4' ? 'A4 Printer' : 'Thermal Printer'}
+          </label>
+          <select
+            id="printer-select"
+            value={currentPrinter}
+            onChange={handlePrinterChange}
+            className="input-field max-w-md text-xs py-1.5"
+          >
+            {printers.map((p) => (
+              <option key={p.name} value={p.name}>
+                {p.displayName}{p.isDefault ? ' (Windows Default)' : ''}
+              </option>
+            ))}
+          </select>
+          <span className="text-[10px] text-slate-400">
+            Saved automatically for this paper size
+          </span>
+        </div>
+      )}
 
       <div className="print-sheet flex justify-center bg-slate-200 dark:bg-slate-950 p-4 sm:p-8 rounded-2xl shadow-inner min-h-[420px]">
         <div className={paper === 'a4' ? 'shadow-2xl' : 'shadow-md'}>

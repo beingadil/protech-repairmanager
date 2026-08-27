@@ -18,6 +18,15 @@ const api = {
       ipcRenderer.invoke('drive:sync', { bytes, folder }),
     chooseFolder: () => ipcRenderer.invoke('drive:choose-folder')
   },
+  print: {
+    getPrinters: () => ipcRenderer.invoke('print:get-printers'),
+    /** Native print to a Windows printer (deviceName optional = OS dialog). */
+    printDocument: (payload: { html: string; format: string; deviceName?: string }) =>
+      ipcRenderer.invoke('print:document', payload),
+    /** Native save dialog + vector PDF. Returns { ok, canceled?, filePath? }. */
+    savePdf: (payload: { html: string; format: string; fileName?: string }) =>
+      ipcRenderer.invoke('print:save-pdf', payload)
+  },
   updater: {
     check: (manual = false) => ipcRenderer.invoke('update:check', manual),
     install: () => ipcRenderer.invoke('update:install'),

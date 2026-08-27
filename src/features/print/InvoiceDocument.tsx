@@ -16,13 +16,16 @@ interface Props {
 }
 
 // Per-paper presentation scale (fonts, spacing, QR).
+// NOTE: content width is the PRINTABLE width, not media width. The Bixolon
+// SRP-Q302/E302 series prints ~72mm max on 80mm media — an 80mm-wide block
+// would be clipped or shifted by the driver, so thermal content stays under.
 const PRESENTATION: Record<
   InvoicePaper,
   { width: string; base: number; title: number; token: number; qr: number }
 > = {
-  a4: { width: '188mm', base: 12, title: 19, token: 13, qr: 66 },
-  80: { width: '76mm', base: 12, title: 17, token: 14, qr: 48 },
-  58: { width: '56mm', base: 11, title: 15, token: 12, qr: 42 }
+  a4: { width: '188mm', base: 12, title: 19, token: 13, qr: 66 },   // 210 − 2×11mm margins
+  80: { width: '72mm', base: 12, title: 17, token: 14, qr: 48 },    // Bixolon printable max
+  58: { width: '54mm', base: 11, title: 15, token: 12, qr: 42 }     // 58 − guides/margins
 };
 
 function txt(px: number) {

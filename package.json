@@ -17,7 +17,7 @@
     "dev:electron": "electron-vite dev",
     "build:electron": "electron-vite build",
     "preview:electron": "electron-vite preview",
-    "dist:win": "electron-vite build && electron-builder --win --electronDist node_modules/electron/dist"
+    "dist:win": "electron-vite build && electron-builder --win"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.7.1",

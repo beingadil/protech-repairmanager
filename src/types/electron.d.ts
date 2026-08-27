@@ -20,6 +20,21 @@ export interface ProdataBridge {
     }>;
     chooseFolder(): Promise<string | null>;
   };
+  print: {
+    getPrinters(): Promise<
+      Array<{ name: string; displayName: string; isDefault: boolean; status: number }>
+    >;
+    printDocument(payload: {
+      html: string;
+      format: 'a4' | 'thermal80' | 'thermal58';
+      deviceName?: string;
+    }): Promise<{ ok: true }>;
+    savePdf(payload: {
+      html: string;
+      format: 'a4' | 'thermal80' | 'thermal58';
+      fileName?: string;
+    }): Promise<{ ok: boolean; canceled?: boolean; filePath?: string; error?: string }>;
+  };
   updater: {
     check(manual?: boolean): Promise<{ ok: boolean; error?: string }>;
     install(): Promise<void>;

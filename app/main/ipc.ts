@@ -2,9 +2,11 @@ import { app, dialog, ipcMain } from 'electron';
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { join, isAbsolute } from 'node:path';
 import { checkForUpdates, quitAndInstall, canCheckForUpdates } from './updater';
+import { registerPrintHandlers } from './print';
 import { query as dbQuery, execute as dbExecute, batchExecute, exportBinary, importBinary, resetToProduction, getDbPath } from './database';
 
 export function registerIpcHandlers(): void {
+  registerPrintHandlers();
   // Native SQLite bridge — renderer never touches the file directly.
   ipcMain.handle('db:query', (_e, sql: unknown, params?: unknown) => {
     if (typeof sql !== 'string' || !sql.trim()) throw new Error('Invalid SQL.');
