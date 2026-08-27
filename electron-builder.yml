@@ -1,9 +1,5 @@
 appId: com.protech.repair-manager
 productName: ProTech Services Repair Manager
-# Use the electron dist already installed in node_modules instead of
-# downloading + unpacking a zip at build time (avoids EPERM/AV lock flakiness
-# on the staging rename and speeds builds up).
-electronDist: node_modules/electron/dist
 directories:
   output: release
 files:
