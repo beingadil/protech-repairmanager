@@ -220,7 +220,7 @@ export const EnhancedDatePicker: React.FC<EnhancedDatePickerProps> = ({
               key={p.label}
               type="button"
               onClick={() => handleApplyOffset(p.offsetDays)}
-              className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg border transition-all cursor-pointer ${
+              className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg border whitespace-nowrap transition-all cursor-pointer ${
                 isSelected
                   ? 'bg-slate-600 text-white border-slate-600 shadow-2xs scale-105'
                   : 'bg-slate-100/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 border-slate-200/80 dark:border-slate-700/80 hover:bg-slate-200/80 dark:hover:bg-slate-700/80 hover:text-slate-900 dark:hover:text-white'

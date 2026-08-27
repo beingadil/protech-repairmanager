@@ -41,6 +41,7 @@ import {
   RAM_OPTIONS,
   STORAGE_OPTIONS,
   PROCESSOR_OPTIONS,
+  DELIVER_STATUS_OPTIONS,
 } from '../../lib/constants';
 
 interface BulkLaptopRow {
@@ -658,24 +659,13 @@ export const AddJobPage: React.FC = () => {
 
                   {/* Delivery Status — 5-stage workflow */}
                   <div className="sm:col-span-2">
-                    <label className="form-label">
-                      Initial Delivery Status
-                    </label>
-                    <div className="pt-1">
-                      <ToggleGroup
-                        columns={5}
-                        variant="cards"
-                        value={deliverStatus}
-                        onChange={(v) => setDeliverStatus(v as DeliverStatus)}
-                        options={[
-                          { value: 'pending', label: 'Pending', tone: 'neutral' },
-                          { value: 'in_progress', label: 'In Progress', tone: 'info' },
-                          { value: 'in_diagnostics', label: 'Diagnostics', tone: 'violet' },
-                          { value: 'ready', label: 'Ready', tone: 'warning' },
-                          { value: 'delivered', label: 'Delivered', tone: 'success' },
-                        ]}
-                      />
-                    </div>
+                    <DropdownSelect
+                      label="Initial Delivery Status"
+                      options={DELIVER_STATUS_OPTIONS}
+                      value={deliverStatus}
+                      onChange={(v) => setDeliverStatus(v as DeliverStatus)}
+                      placeholder="Select delivery status…"
+                    />
                   </div>
                 </div>
               </div>

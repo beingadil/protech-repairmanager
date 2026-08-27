@@ -221,7 +221,7 @@ export const EnhancedCustomerSupplierSelect: React.FC<EnhancedCustomerSupplierSe
             onClick={() => setIsCreatingNew(true)}
             className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-bold flex items-center gap-1 cursor-pointer"
           >
-            <Plus className="w-3.5 h-3.5" /> + Register New Client
+            <Plus className="w-3.5 h-3.5" /> Register New Client
           </button>
         )}
       </div>
