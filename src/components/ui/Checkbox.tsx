@@ -1,55 +1,50 @@
 import React from 'react';
 
-interface CheckboxProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
+interface CheckboxProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type' | 'className'> {
   label: string;
   hint?: string;
   error?: string;
   required?: boolean;
+  className?: string;
 }
 
 export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
-  (
-    {
-      label,
-      hint,
-      error,
-      required = false,
-      className = '',
-      id,
-      ...props
-    },
-    ref
-  ) => {
-    const checkboxId = id || label?.toLowerCase().replace(/\s+/g, '-') || React.useId();
+  ({ label, hint, error, required = false, className = '', ...props }, ref) => {
+    const id = props.id || React.useId();
 
     return (
-      <div className={`flex items-start gap-3 ${className}`}>
-        <input
-          ref={ref}
-          type="checkbox"
-          id={checkboxId}
-          className={`checkbox mt-0.5 ${error ? 'border-danger' : ''}`}
-          aria-invalid={error ? 'true' : 'false'}
-          aria-describedby={error ? `${checkboxId}-error` : hint ? `${checkboxId}-hint` : undefined}
-          required={required}
-          {...props}
-        />
-        <div className="flex flex-col gap-1">
-          <label htmlFor={checkboxId} className="text-sm text-text-primary cursor-pointer">
+      <div className={className}>
+        <div className="flex items-start gap-2.5">
+          <input
+            {...props}
+            ref={ref}
+            type="checkbox"
+            id={id}
+            required={required}
+            aria-invalid={error ? true : false}
+            aria-describedby={
+              error ? `${id}-error` : hint ? `${id}-hint` : undefined
+            }
+            className="mt-0.5 h-4 w-4 shrink-0 rounded cursor-pointer accent-slate-900 dark:accent-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
+          />
+          <label
+            htmlFor={id}
+            className="text-sm text-slate-700 dark:text-slate-300 leading-snug cursor-pointer select-none"
+          >
             {label}
+            {required && <span className="text-rose-500 ml-0.5">*</span>}
           </label>
-          {hint && !error && (
-            <p id={`${checkboxId}-hint`} className="field-hint text-sm">{hint}</p>
-          )}
-          {error && (
-            <p id={`${checkboxId}-error`} className="field-error" role="alert">
-              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 10-2 0v6a1 1 0 102 0V5z" clipRule="evenodd" />
-              </svg>
-              {error}
-            </p>
-          )}
         </div>
+        {hint && !error && (
+          <p id={`${id}-hint`} className="ml-[26px] mt-1 text-[11px] text-slate-400 dark:text-slate-500">
+            {hint}
+          </p>
+        )}
+        {error && (
+          <p id={`${id}-error`} role="alert" className="ml-[26px] mt-1 text-[11px] font-medium text-rose-600 dark:text-rose-400">
+            {error}
+          </p>
+        )}
       </div>
     );
   }

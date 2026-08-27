@@ -17,6 +17,8 @@ interface EnhancedDatePickerProps {
   presets?: Preset[];
   type?: 'receive' | 'return';
   baseDate?: string; // e.g. receiveDate to compute offsets from
+  /** Hide label + preset pills; smaller trigger for dense layouts (table rows, grids). */
+  compact?: boolean;
 }
 
 // Helpers
@@ -72,6 +74,7 @@ export const EnhancedDatePicker: React.FC<EnhancedDatePickerProps> = ({
   presets,
   type = 'receive',
   baseDate,
+  compact = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -140,24 +143,30 @@ export const EnhancedDatePicker: React.FC<EnhancedDatePickerProps> = ({
   const relativeTag = getRelativeLabel(value);
 
   return (
-    <div className="relative space-y-1.5" ref={containerRef}>
-      <div className="flex items-center justify-between">
-        <label className="form-label">
-          {label} {required && <span className="text-rose-500">*</span>}
-        </label>
-        {relativeTag && (
-          <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-            {relativeTag}
-          </span>
-        )}
-      </div>
+    <div className={`relative ${compact ? '' : 'space-y-1.5'}`} ref={containerRef}>
+      {!compact && (
+        <div className="flex items-center justify-between">
+          <label className="form-label">
+            {label} {required && <span className="text-rose-500">*</span>}
+          </label>
+          {relativeTag && (
+            <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+              {relativeTag}
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Main Trigger Field */}
       <div className="relative">
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
+          aria-label={compact ? label : undefined}
+          title={compact ? `${label}: ${formatDisplayDate(value)}` : undefined}
           className={`input-field flex items-center justify-between cursor-pointer group font-sans text-left transition-all duration-200 ${
+            compact ? 'px-2.5 py-1.5 text-xs' : ''
+          } ${
             isOpen
               ? 'border-slate-600 dark:border-slate-500 ring-2 ring-slate-600/20 dark:ring-slate-500/30 shadow-xs'
               : 'hover:border-slate-400 dark:hover:border-slate-600'
@@ -165,18 +174,23 @@ export const EnhancedDatePicker: React.FC<EnhancedDatePickerProps> = ({
         >
           <div className="flex items-center gap-2 min-w-0">
             <span className="font-semibold text-slate-900 dark:text-slate-100 truncate text-xs">
-              {formatDisplayDate(value)}
+              {compact ? formatDisplayDate(value).replace(/,.*/, '') : formatDisplayDate(value)}
             </span>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-[11px] font-mono font-medium text-slate-400 dark:text-slate-500 hidden sm:inline px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800/80 rounded-md">
-              {value}
-            </span>
-            <div className={`p-1 rounded-lg transition-colors ${isOpen ? 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white'}`}>
-              <CalendarIcon className="w-4 h-4 shrink-0 transition-transform duration-200 group-hover:scale-110" />
+          {!compact && (
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-[11px] font-mono font-medium text-slate-400 dark:text-slate-500 hidden sm:inline px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800/80 rounded-md">
+                {value}
+              </span>
+              <div className={`p-1 rounded-lg transition-colors ${isOpen ? 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white'}`}>
+                <CalendarIcon className="w-4 h-4 shrink-0 transition-transform duration-200 group-hover:scale-110" />
+              </div>
             </div>
-          </div>
+          )}
+          {compact && (
+            <CalendarIcon className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+          )}
         </button>
 
         {/* Fallback Native Input for Form Validation/Accessibility */}
@@ -192,8 +206,9 @@ export const EnhancedDatePicker: React.FC<EnhancedDatePickerProps> = ({
       </div>
 
       {/* Quick Preset Pills */}
-      <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-        {defaultPresets.map((p) => {
+      {!compact && (
+        <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+          {defaultPresets.map((p) => {
           const anchor = baseDate ? parseISODate(baseDate) : new Date();
           const target = new Date(anchor);
           target.setDate(target.getDate() + p.offsetDays);
@@ -212,12 +227,13 @@ export const EnhancedDatePicker: React.FC<EnhancedDatePickerProps> = ({
               }`}
             >
               {p.label}
-            </button>
-          );
-        })}
-      </div>
+          </button>
+        );
+      })}
+        </div>
+      )}
 
-      {helperText && (
+      {helperText && !compact && (
         <p className="text-[11px] text-slate-400 dark:text-slate-500">{helperText}</p>
       )}
 

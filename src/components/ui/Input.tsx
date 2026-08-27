@@ -1,56 +1,50 @@
 import React from 'react';
+import FieldShell from './FieldShell';
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'className' | 'size'> {
   label?: string;
   hint?: string;
   error?: string;
   required?: boolean;
   fullWidth?: boolean;
+  size?: 'sm' | 'md';
+  className?: string;
 }
 
-export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  (
-    {
-      label,
-      hint,
-      error,
-      required = false,
-      fullWidth = true,
-      className = '',
-      id,
-      ...props
-    },
-    ref
-  ) => {
-    const inputId = id || label?.toLowerCase().replace(/\s+/g, '-') || React.useId();
+const inputBase =
+  'w-full text-sm bg-white dark:bg-slate-900 border rounded-xl text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none transition-all min-w-0';
 
+const sizeClasses = {
+  sm: 'px-3 py-1.5 text-xs rounded-lg',
+  md: 'px-3.5 py-2.5 rounded-xl',
+} as const;
+
+export const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ label, hint, error, required = false, fullWidth = true, size = 'md', className = '', ...props }, ref) => {
     return (
-      <div className={`field ${fullWidth ? 'w-full' : ''} ${className}`}>
-        {label && (
-          <label htmlFor={inputId} className={`field-label ${required ? 'field-required' : ''}`}>
-            {label}
-          </label>
+      <FieldShell
+        id={props.id}
+        label={label}
+        hint={hint}
+        error={error}
+        required={required}
+        fullWidth={fullWidth}
+        className={className}
+      >
+        {(aria) => (
+          <input
+            {...props}
+            {...aria}
+            ref={ref}
+            required={required}
+            className={`${inputBase} ${sizeClasses[size]} ${
+              error
+                ? 'border-rose-400 dark:border-rose-500/60 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500'
+                : 'border-slate-300/80 dark:border-slate-700/80 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:ring-blue-400/20 dark:focus:border-blue-400'
+            }`}
+          />
         )}
-        <input
-          ref={ref}
-          id={inputId}
-          className={`input ${error ? 'input-error' : ''}`}
-          aria-invalid={error ? 'true' : 'false'}
-          aria-describedby={error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined}
-          {...props}
-        />
-        {hint && !error && (
-          <p id={`${inputId}-hint`} className="field-hint">{hint}</p>
-        )}
-        {error && (
-          <p id={`${inputId}-error`} className="field-error" role="alert">
-            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 10-2 0v6a1 1 0 102 0V5z" clipRule="evenodd" />
-            </svg>
-            {error}
-          </p>
-        )}
-      </div>
+      </FieldShell>
     );
   }
 );

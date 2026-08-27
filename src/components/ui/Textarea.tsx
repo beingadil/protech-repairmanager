@@ -1,59 +1,42 @@
 import React from 'react';
+import FieldShell from './FieldShell';
 
-interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+interface TextareaProps extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, 'className'> {
   label?: string;
   hint?: string;
   error?: string;
   required?: boolean;
   fullWidth?: boolean;
-  rows?: number;
+  className?: string;
 }
 
 export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-  (
-    {
-      label,
-      hint,
-      error,
-      required = false,
-      fullWidth = true,
-      rows = 4,
-      className = '',
-      id,
-      ...props
-    },
-    ref
-  ) => {
-    const textareaId = id || label?.toLowerCase().replace(/\s+/g, '-') || React.useId();
-
+  ({ label, hint, error, required = false, fullWidth = true, rows = 4, className = '', ...props }, ref) => {
     return (
-      <div className={`field ${fullWidth ? 'w-full' : ''} ${className}`}>
-        {label && (
-          <label htmlFor={textareaId} className={`field-label ${required ? 'field-required' : ''}`}>
-            {label}
-          </label>
+      <FieldShell
+        id={props.id}
+        label={label}
+        hint={hint}
+        error={error}
+        required={required}
+        fullWidth={fullWidth}
+        className={className}
+      >
+        {(aria) => (
+          <textarea
+            {...props}
+            {...aria}
+            ref={ref}
+            rows={rows}
+            required={required}
+            className={`w-full px-3.5 py-2.5 text-sm bg-white dark:bg-slate-900 border rounded-xl text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none transition-all resize-y min-w-0 ${
+              error
+                ? 'border-rose-400 dark:border-rose-500/60 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500'
+                : 'border-slate-300/80 dark:border-slate-700/80 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:ring-blue-400/20 dark:focus:border-blue-400'
+            }`}
+          />
         )}
-        <textarea
-          ref={ref}
-          id={textareaId}
-          rows={rows}
-          className={`textarea ${error ? 'input-error' : ''}`}
-          aria-invalid={error ? 'true' : 'false'}
-          aria-describedby={error ? `${textareaId}-error` : hint ? `${textareaId}-hint` : undefined}
-          {...props}
-        />
-        {hint && !error && (
-          <p id={`${textareaId}-hint`} className="field-hint">{hint}</p>
-        )}
-        {error && (
-          <p id={`${textareaId}-error`} className="field-error" role="alert">
-            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 10-2 0v6a1 1 0 102 0V5z" clipRule="evenodd" />
-            </svg>
-            {error}
-          </p>
-        )}
-      </div>
+      </FieldShell>
     );
   }
 );

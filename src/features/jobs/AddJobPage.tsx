@@ -29,9 +29,19 @@ import { useSettingsStore } from '../../store/settings';
 import { EnhancedCustomerSupplierSelect } from '../../components/shared/EnhancedCustomerSupplierSelect';
 import { EnhancedDatePicker } from '../../components/common/EnhancedDatePicker';
 import { query, execute, getNextPTSToken, insertJobWithRetry } from '../../lib/db';
-import { JobType, PaymentStatus, DeliverStatus, Job } from '../../types/job';
+import { JobType, PaymentStatus, DeliverStatus } from '../../types/job';
 import { TokenDisplay } from '../../components/shared/TokenDisplay';
 import { formatCurrency } from '../../lib/utils';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { Textarea } from '../../components/ui/Textarea';
+import { DropdownSelect } from '../../components/ui/DropdownSelect';
+import { ToggleGroup } from '../../components/ui/ToggleGroup';
+import {
+  RAM_OPTIONS,
+  STORAGE_OPTIONS,
+  PROCESSOR_OPTIONS,
+} from '../../lib/constants';
 
 interface BulkLaptopRow {
   id: string;
@@ -381,30 +391,15 @@ export const AddJobPage: React.FC = () => {
         </div>
 
         {/* Mode Switcher Tabs */}
-        <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
-          <button
-            type="button"
-            onClick={() => setIntakeMode('single')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              intakeMode === 'single'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <User className="w-3.5 h-3.5" /> Single Customer Intake
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setIntakeMode('bulk_supplier')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              intakeMode === 'bulk_supplier'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <Boxes className="w-3.5 h-3.5" /> Market Supplier Batch (Multi Laptops)
-          </button>
+        <div className="shrink-0">
+          <ToggleGroup
+            value={intakeMode}
+            onChange={(v) => setIntakeMode(v as 'single' | 'bulk_supplier')}
+            options={[
+              { value: 'single', label: 'Single Customer Intake', icon: <User className="w-3.5 h-3.5" /> },
+              { value: 'bulk_supplier', label: 'Supplier Batch', icon: <Boxes className="w-3.5 h-3.5" /> },
+            ]}
+          />
         </div>
       </div>
 
@@ -506,96 +501,63 @@ export const AddJobPage: React.FC = () => {
                   </h2>
 
                   {/* Laptop vs PC Toggle */}
-                  <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-                    <button
-                      type="button"
-                      onClick={() => setJobType('laptop')}
-                      className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                        jobType === 'laptop'
-                          ? 'bg-slate-900 text-white shadow-xs'
-                          : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-                      }`}
-                    >
-                      <Laptop className="w-3.5 h-3.5" /> Laptop
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setJobType('pc')}
-                      className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                        jobType === 'pc'
-                          ? 'bg-slate-900 text-white shadow-xs'
-                          : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-                      }`}
-                    >
-                      <Monitor className="w-3.5 h-3.5" /> PC Desktop
-                    </button>
+                  <div className="shrink-0">
+                    <ToggleGroup
+                      value={jobType}
+                      onChange={(v) => setJobType(v as JobType)}
+                      options={[
+                        { value: 'laptop', label: 'Laptop', icon: <Laptop className="w-3.5 h-3.5" /> },
+                        { value: 'pc', label: 'PC Desktop', icon: <Monitor className="w-3.5 h-3.5" /> },
+                      ]}
+                    />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="form-label">
-                      Brand & Model *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={model}
-                      onChange={(e) => setModel(e.target.value)}
-                      placeholder="e.g. Dell XPS 15 9500 / HP Pavilion"
-                      className="input-field"
-                    />
-                  </div>
+                  <Input
+                    type="text"
+                    required
+                    label="Brand & Model"
+                    value={model}
+                    onChange={(e) => setModel(e.target.value)}
+                    placeholder="e.g. Dell XPS 15 9500 / HP Pavilion"
+                  />
 
-                  <div>
-                    <label className="form-label">
-                      Serial / Tag Number
-                    </label>
-                    <input
-                      type="text"
-                      value={serialNo}
-                      onChange={(e) => setSerialNo(e.target.value)}
-                      placeholder="e.g. SN-893201"
-                      className="input-field"
-                    />
-                  </div>
+                  <Input
+                    type="text"
+                    label="Serial / Tag Number"
+                    value={serialNo}
+                    onChange={(e) => setSerialNo(e.target.value)}
+                    placeholder="e.g. SN-893201"
+                  />
 
-                  <div>
-                    <label className="form-label">
-                      RAM Memory
-                    </label>
-                    <input
-                      type="text"
-                      value={ram}
-                      onChange={(e) => setRam(e.target.value)}
-                      placeholder="e.g. 8GB / 16GB DDR4"
-                      className="input-field"
-                    />
-                  </div>
+                  <DropdownSelect
+                    label="RAM Memory"
+                    options={RAM_OPTIONS}
+                    value={ram}
+                    onChange={setRam}
+                    allowCustom
+                    placeholder="Select RAM…"
+                  />
 
-                  <div>
-                    <label className="form-label">
-                      Storage / SSD / HDD
-                    </label>
-                    <input
-                      type="text"
-                      value={hard}
-                      onChange={(e) => setHard(e.target.value)}
-                      placeholder="e.g. 512GB NVMe / 1TB HDD"
-                      className="input-field"
-                    />
-                  </div>
+                  <DropdownSelect
+                    label="Storage / SSD / HDD"
+                    options={STORAGE_OPTIONS}
+                    value={hard}
+                    onChange={setHard}
+                    allowCustom
+                    placeholder="Select storage…"
+                  />
 
                   <div className="sm:col-span-2">
-                    <label className="form-label">
-                      Processor / CPU
-                    </label>
-                    <input
-                      type="text"
+                    <DropdownSelect
+                      label="Processor / CPU"
+                      options={PROCESSOR_OPTIONS}
                       value={processor}
-                      onChange={(e) => setProcessor(e.target.value)}
-                      placeholder="e.g. Intel Core i7 11th Gen / Ryzen 7"
-                      className="input-field"
+                      onChange={setProcessor}
+                      searchable
+                      allowCustom
+                      placeholder="Select processor…"
                     />
                   </div>
                 </div>
@@ -609,16 +571,13 @@ export const AddJobPage: React.FC = () => {
                 <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2 font-heading">
                   Symptoms & Problem Description
                 </h2>
-                <div>
-                  <textarea
-                    required
-                    rows={4}
-                    value={symptoms}
-                    onChange={(e) => setSymptoms(e.target.value)}
-                    placeholder="Describe reported fault e.g., No power, screen flickering, thermal overheating, OS boot loop..."
-                    className="input-field"
-                  />
-                </div>
+                <Textarea
+                  required
+                  rows={4}
+                  value={symptoms}
+                  onChange={(e) => setSymptoms(e.target.value)}
+                  placeholder="Describe reported fault e.g., No power, screen flickering, thermal overheating, OS boot loop..."
+                />
               </div>
 
               {/* Dates, Charges & Status */}
@@ -648,119 +607,74 @@ export const AddJobPage: React.FC = () => {
                     helperText="Target completion date"
                   />
 
-                  <div>
-                    <label className="form-label">
-                      Repair Charges (PKR)
-                    </label>
-                    <input
-                      type="number"
-                      required
-                      min={0}
-                      value={charges}
-                      onChange={(e) => setCharges(parseFloat(e.target.value) || 0)}
-                      className="input-field font-bold text-slate-900 dark:text-white"
-                    />
-                  </div>
+                  <Input
+                    type="number"
+                    required
+                    min={0}
+                    label="Repair Charges (PKR)"
+                    value={charges}
+                    onChange={(e) => setCharges(parseFloat(e.target.value) || 0)}
+                    className="[&_input]:font-bold [&_input]:text-slate-900 dark:[&_input]:text-white"
+                  />
 
                   {/* Charger Included Toggle */}
                   <div>
                     <label className="form-label">
                       Charger / Adapter Included?
                     </label>
-                    <div className="flex items-center gap-2 pt-1">
-                      <button
-                        type="button"
-                        onClick={() => setHasCharger(1)}
-                        className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
-                          hasCharger === 1
-                            ? 'bg-emerald-600 text-white border-emerald-600'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
-                        }`}
-                      >
-                        Yes (Charger)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setHasCharger(0)}
-                        className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
-                          hasCharger === 0
-                            ? 'bg-rose-600 text-white border-rose-600'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
-                        }`}
-                      >
-                        No
-                      </button>
+                    <div className="pt-1">
+                      <ToggleGroup
+                        columns={2}
+                        variant="cards"
+                        value={hasCharger ? 'yes' : 'no'}
+                        onChange={(v) => setHasCharger(v === 'yes' ? 1 : 0)}
+                        options={[
+                          { value: 'yes', label: 'Yes (Charger)', tone: 'success' },
+                          { value: 'no', label: 'No', tone: 'danger' },
+                        ]}
+                      />
                     </div>
                   </div>
 
                   {/* Payment Status Toggle */}
-                  <div>
+                  <div className="sm:col-span-2">
                     <label className="form-label">
                       Initial Payment Status
                     </label>
-                    <div className="grid grid-cols-3 gap-2 pt-1">
-                      <button
-                        type="button"
-                        onClick={() => setPaymentStatus('due')}
-                        className={`py-2 px-3 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
-                          paymentStatus === 'due'
-                            ? 'bg-rose-600 text-white border-rose-600'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
-                        }`}
-                      >
-                        DUE
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPaymentStatus('paid')}
-                        className={`py-2 px-3 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
-                          paymentStatus === 'paid'
-                            ? 'bg-emerald-600 text-white border-emerald-600'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
-                        }`}
-                      >
-                        PAID
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPaymentStatus('complimentary')}
-                        className={`py-2 px-3 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
-                          paymentStatus === 'complimentary'
-                            ? 'bg-violet-600 text-white border-violet-600'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
-                        }`}
-                      >
-                        NO PAYMENT
-                      </button>
+                    <div className="pt-1">
+                      <ToggleGroup
+                        columns={3}
+                        variant="cards"
+                        value={paymentStatus}
+                        onChange={(v) => setPaymentStatus(v as PaymentStatus)}
+                        options={[
+                          { value: 'due', label: 'DUE', tone: 'danger' },
+                          { value: 'paid', label: 'PAID', tone: 'success' },
+                          { value: 'complimentary', label: 'NO PAYMENT', tone: 'violet' },
+                        ]}
+                      />
                     </div>
                   </div>
 
                   {/* Delivery Status — 5-stage workflow */}
-                  <div>
+                  <div className="sm:col-span-2">
                     <label className="form-label">
                       Initial Delivery Status
                     </label>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 pt-1">
-                      {([
-                          ['pending', 'Pending', 'bg-slate-500 border-slate-500'],
-                          ['in_progress', 'In Progress', 'bg-blue-600 border-blue-600'],
-                          ['in_diagnostics', 'Diagnostics', 'bg-violet-600 border-violet-600'],
-                          ['ready', 'Ready', 'bg-amber-600 border-amber-600'],
-                          ['delivered', 'Delivered', 'bg-emerald-600 border-emerald-600']
-                        ] as const).map(([val, label, activeClasses]) => (
-                          <button
-                            key={val}
-                            type="button"
-                            onClick={() => setDeliverStatus(val as DeliverStatus)}
-                            className={`py-2 px-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
-                              deliverStatus === val
-                                ? `${activeClasses} text-white`
-                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
-                            }`}
-                          >
-                            {label}
-                          </button>
-                        ))}
+                    <div className="pt-1">
+                      <ToggleGroup
+                        columns={5}
+                        variant="cards"
+                        value={deliverStatus}
+                        onChange={(v) => setDeliverStatus(v as DeliverStatus)}
+                        options={[
+                          { value: 'pending', label: 'Pending', tone: 'neutral' },
+                          { value: 'in_progress', label: 'In Progress', tone: 'info' },
+                          { value: 'in_diagnostics', label: 'Diagnostics', tone: 'violet' },
+                          { value: 'ready', label: 'Ready', tone: 'warning' },
+                          { value: 'delivered', label: 'Delivered', tone: 'success' },
+                        ]}
+                      />
                     </div>
                   </div>
                 </div>
@@ -769,31 +683,26 @@ export const AddJobPage: React.FC = () => {
           </div>
 
           {/* Footer Action Bar */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
-            <button
-              type="button"
-              onClick={() => navigate('/jobs')}
-              className="btn-secondary"
-            >
+          <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+            <Button variant="secondary" onClick={() => navigate('/jobs')}>
               Cancel
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="success"
               onClick={() => handleSingleSubmit(true)}
               disabled={isSubmitting}
-              className="btn-success cursor-pointer"
+              icon={<Printer className="w-4 h-4" />}
             >
-              <Printer className="w-4 h-4" />
-              <span>Save & Print Ticket</span>
-            </button>
-            <button
+              Save & Print Ticket
+            </Button>
+            <Button
               type="submit"
               disabled={isSubmitting}
-              className="btn-primary cursor-pointer"
+              loading={isSubmitting}
+              icon={<Save className="w-4 h-4" />}
             >
-              <Save className="w-4 h-4" />
-              <span>{isSubmitting ? 'Saving...' : 'Save Repair Job'}</span>
-            </button>
+              {isSubmitting ? 'Saving…' : 'Save Repair Job'}
+            </Button>
           </div>
         </form>
       )}
@@ -831,29 +740,21 @@ export const AddJobPage: React.FC = () => {
             />
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-              <div>
-                <label className="form-label">
-                  Receive Date
-                </label>
-                <input
-                  type="date"
-                  value={bulkReceiveDate}
-                  onChange={(e) => setBulkReceiveDate(e.target.value)}
-                  className="input-field"
-                />
-              </div>
+              <EnhancedDatePicker
+                label="Receive Date"
+                type="receive"
+                value={bulkReceiveDate}
+                onChange={(val) => setBulkReceiveDate(val)}
+              />
 
-              <div>
-                <label className="form-label">
-                  Target Return Date
-                </label>
-                <input
-                  type="date"
-                  value={bulkReturnDate}
-                  onChange={(e) => setBulkReturnDate(e.target.value)}
-                  className="input-field"
-                />
-              </div>
+              <EnhancedDatePicker
+                label="Target Return Date"
+                type="return"
+                value={bulkReturnDate}
+                baseDate={bulkReceiveDate}
+                onChange={(val) => setBulkReturnDate(val)}
+                minDate={bulkReceiveDate}
+              />
 
               <div className="flex items-end">
                 <div className="bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 w-full text-xs text-slate-700 dark:text-slate-300 flex items-center gap-2">
@@ -876,14 +777,9 @@ export const AddJobPage: React.FC = () => {
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={addBulkRow}
-                className="btn-primary"
-              >
-                <Plus className="w-4 h-4" />
-                <span>+ Add Another Laptop</span>
-              </button>
+              <Button onClick={addBulkRow} icon={<Plus className="w-4 h-4" />}>
+                Add Another Laptop
+              </Button>
             </div>
 
             <div className="space-y-4">
@@ -910,87 +806,80 @@ export const AddJobPage: React.FC = () => {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                        Laptop Model *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={row.model}
-                        onChange={(e) => updateBulkRow(row.id, 'model', e.target.value)}
-                        placeholder="e.g. Lenovo ThinkPad T480"
-                        className="w-full p-2 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 font-medium"
-                      />
-                    </div>
+                    <Input
+                      type="text"
+                      required
+                      label="Laptop Model"
+                      value={row.model}
+                      onChange={(e) => updateBulkRow(row.id, 'model', e.target.value)}
+                      placeholder="e.g. Lenovo ThinkPad T480"
+                    />
 
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                        Serial / Tag No
-                      </label>
-                      <input
-                        type="text"
-                        value={row.serialNo}
-                        onChange={(e) => updateBulkRow(row.id, 'serialNo', e.target.value)}
-                        placeholder="e.g. SN-5542"
-                        className="w-full p-2 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10"
-                      />
-                    </div>
+                    <Input
+                      type="text"
+                      label="Serial / Tag No"
+                      value={row.serialNo}
+                      onChange={(e) => updateBulkRow(row.id, 'serialNo', e.target.value)}
+                      placeholder="e.g. SN-5542"
+                    />
 
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                        Specs (RAM / SSD / CPU)
-                      </label>
-                      <input
-                        type="text"
-                        value={`${row.ram} / ${row.hard}`}
-                        onChange={(e) => {
-                          const parts = e.target.value.split('/');
-                          updateBulkRow(row.id, 'ram', parts[0] || '');
-                          if (parts[1]) updateBulkRow(row.id, 'hard', parts[1] || '');
-                        }}
-                        placeholder="8GB / 256GB SSD"
-                        className="w-full p-2 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10"
-                      />
-                    </div>
+                    <DropdownSelect
+                      size="sm"
+                      label="RAM Memory"
+                      options={RAM_OPTIONS}
+                      value={row.ram}
+                      onChange={(v) => updateBulkRow(row.id, 'ram', v)}
+                      allowCustom
+                      placeholder="Select RAM…"
+                    />
 
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                        Est. Charges (PKR)
-                      </label>
-                      <input
-                        type="number"
-                        value={row.charges}
-                        onChange={(e) => updateBulkRow(row.id, 'charges', parseFloat(e.target.value) || 0)}
-                        placeholder="1500"
-                        className="w-full p-2 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 font-bold"
-                      />
-                    </div>
+                    <DropdownSelect
+                      size="sm"
+                      label="Storage"
+                      options={STORAGE_OPTIONS}
+                      value={row.hard}
+                      onChange={(v) => updateBulkRow(row.id, 'hard', v)}
+                      allowCustom
+                      placeholder="Select storage…"
+                    />
+
+                    <DropdownSelect
+                      size="sm"
+                      label="Processor"
+                      options={PROCESSOR_OPTIONS}
+                      value={row.processor}
+                      onChange={(v) => updateBulkRow(row.id, 'processor', v)}
+                      searchable
+                      allowCustom
+                      placeholder="Select CPU…"
+                    />
+
+                    <Input
+                      type="number"
+                      label="Est. Charges (PKR)"
+                      value={row.charges}
+                      onChange={(e) => updateBulkRow(row.id, 'charges', parseFloat(e.target.value) || 0)}
+                      placeholder="1500"
+                    />
 
                     <div className="sm:col-span-2">
-                      <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                        Fault / Symptoms *
-                      </label>
-                      <input
+                      <Input
                         type="text"
                         required
+                        label="Fault / Symptoms"
                         value={row.symptoms}
                         onChange={(e) => updateBulkRow(row.id, 'symptoms', e.target.value)}
                         placeholder="e.g. Dead / No power on adapter, 3.3V missing"
-                        className="w-full p-2 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10"
                       />
                     </div>
 
                     <div className="sm:col-span-2">
-                      <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                        Notes / Charger
-                      </label>
-                      <input
+                      <Input
                         type="text"
+                        label="Notes / Charger"
                         value={row.notes}
                         onChange={(e) => updateBulkRow(row.id, 'notes', e.target.value)}
                         placeholder="e.g. No charger included, dealer urgently needs by Monday"
-                        className="w-full p-2 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10"
                       />
                     </div>
                   </div>
@@ -1010,35 +899,32 @@ export const AddJobPage: React.FC = () => {
 
           {/* Bulk Summary and Submit */}
           <div className="bg-slate-50 dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="text-xs text-slate-600 dark:text-slate-400 space-x-4">
-              <span>
-                Total Laptops: <strong className="text-slate-900 dark:text-white font-bold">{bulkRows.length}</strong>
-              </span>
-              <span>
-                Total Est. Charges:{' '}
-                <strong className="text-emerald-600 dark:text-emerald-400 font-bold">
-                  {formatCurrency(bulkTotalCharges)}
-                </strong>
-              </span>
-            </div>
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-xs text-slate-600 dark:text-slate-400 space-x-4">
+                <span>
+                  Total Laptops: <strong className="text-slate-900 dark:text-white font-bold">{bulkRows.length}</strong>
+                </span>
+                <span>
+                  Total Est. Charges:{' '}
+                  <strong className="text-emerald-600 dark:text-emerald-400 font-bold">
+                    {formatCurrency(bulkTotalCharges)}
+                  </strong>
+                </span>
+              </div>
 
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => navigate('/jobs')}
-                className="btn-secondary"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleBulkSubmit}
-                disabled={isSubmitting}
-                className="btn-primary"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>{isSubmitting ? 'Registering...' : `Save All ${bulkRows.length} Laptops & Generate Tokens`}</span>
-              </button>
+              <div className="flex items-center gap-3">
+                <Button variant="secondary" onClick={() => navigate('/jobs')}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleBulkSubmit}
+                  disabled={isSubmitting}
+                  loading={isSubmitting}
+                  icon={<CheckCircle2 className="w-4 h-4" />}
+                >
+                  {isSubmitting ? 'Registering…' : `Save All ${bulkRows.length} Laptops`}
+                </Button>
+              </div>
             </div>
           </div>
         </div>

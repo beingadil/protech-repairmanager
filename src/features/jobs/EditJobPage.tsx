@@ -5,14 +5,32 @@ import {
   Monitor,
   Save,
   ArrowLeft,
-  Printer,
-  Trash2
+  Trash2,
+  UserCog
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { query, execute } from '../../lib/db';
 import { Job, JobType, PaymentStatus, DeliverStatus } from '../../types/job';
 import { TokenDisplay } from '../../components/shared/TokenDisplay';
 import { EnhancedDatePicker } from '../../components/common/EnhancedDatePicker';
+import { EnhancedCustomerSupplierSelect } from '../../components/shared/EnhancedCustomerSupplierSelect';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { Textarea } from '../../components/ui/Textarea';
+import { DropdownSelect } from '../../components/ui/DropdownSelect';
+import { ToggleGroup } from '../../components/ui/ToggleGroup';
+import {
+  RAM_OPTIONS,
+  STORAGE_OPTIONS,
+  PROCESSOR_OPTIONS,
+} from '../../lib/constants';
+
+interface CustomerRecord {
+  id: number;
+  name: string;
+  mobile?: string;
+  address?: string;
+}
 
 export const EditJobPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +38,11 @@ export const EditJobPage: React.FC = () => {
 
   const [isLoading, setIsLoading] = useState(true);
   const [job, setJob] = useState<Job | null>(null);
+
+  // Party handling: null while untouched; edited via the shared party select.
+  const [originalParty, setOriginalParty] = useState<CustomerRecord | null>(null);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
+  const [reassignedTo, setReassignedTo] = useState<CustomerRecord | null>(null);
 
   // Form states
   const [customerName, setCustomerName] = useState('');
@@ -44,6 +67,7 @@ export const EditJobPage: React.FC = () => {
 
   useEffect(() => {
     if (id) loadJob(parseInt(id, 10));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const loadJob = async (jobId: number) => {
@@ -65,6 +89,13 @@ export const EditJobPage: React.FC = () => {
 
       const j = res[0];
       setJob(j);
+      setOriginalParty({
+        id: j.customer_id,
+        name: j.customer_name || '',
+        mobile: j.customer_mobile || '',
+        address: j.customer_address || ''
+      });
+      setSelectedCustomerId(j.customer_id);
       setCustomerName(j.customer_name || '');
       setCustomerMobile(j.customer_mobile || '');
       setCustomerAddress(j.customer_address || '');
@@ -97,13 +128,19 @@ export const EditJobPage: React.FC = () => {
     if (!job) return;
 
     try {
-      // Update customer info
-      await execute(`UPDATE customers SET name = ?, mobile = ?, address = ?, updated_at = datetime('now') WHERE id = ?`, [
-        customerName,
-        customerMobile,
-        customerAddress,
-        job.customer_id
-      ]);
+      if (reassignedTo && reassignedTo.id !== originalParty?.id) {
+        // Reassign the job to a different saved party without touching records.
+        await execute(
+          `UPDATE jobs SET customer_id = ?, updated_at = datetime('now') WHERE id = ?`,
+          [reassignedTo.id, job.id]
+        );
+      } else {
+        // Update contact info of the currently linked customer record.
+        await execute(
+          `UPDATE customers SET name = ?, mobile = ?, address = ?, updated_at = datetime('now') WHERE id = ?`,
+          [customerName.trim() || originalParty?.name || '', customerMobile, customerAddress, job.customer_id]
+        );
+      }
 
       // Update job info
       await execute(
@@ -145,17 +182,18 @@ export const EditJobPage: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-4">
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate(`/jobs/${job.id}`)}
-            className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
+            aria-label="Back to job"
+            className="btn-ghost"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
             <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight font-heading">Edit Repair Record</h1>
-            <p className="text-xs text-slate-500">Update hardware specifications, charges, or status for {job.token_number}</p>
+            <p className="page-subtitle">Update hardware specifications, charges, or status for {job.token_number}</p>
           </div>
         </div>
 
@@ -167,118 +205,135 @@ export const EditJobPage: React.FC = () => {
           {/* Customer & Specs */}
           <div className="space-y-6">
             <div className="card-container space-y-4">
-              <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-2">
+              <h2 className="section-title border-b border-slate-100 dark:border-slate-800 pb-2">
                 Customer Details
               </h2>
-              <div className="space-y-3">
-                <div>
-                  <label className="form-label">
-                    Customer Name *
-                  </label>
-                  <input
+
+              {reassignedTo && reassignedTo.id !== originalParty?.id ? (
+                <div className="flex items-start justify-between gap-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-xl p-3">
+                  <div className="flex items-start gap-2 min-w-0">
+                    <UserCog className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+                    <p className="text-xs text-blue-700 dark:text-blue-400 leading-snug min-w-0">
+                      On save, this job will be reassigned to{' '}
+                      <strong>{reassignedTo.name}</strong> ({reassignedTo.mobile || 'no phone'}).
+                      Contact details below no longer apply.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setReassignedTo(null);
+                      setSelectedCustomerId(originalParty?.id ?? null);
+                    }}
+                    className="text-xs font-bold text-rose-500 hover:text-rose-700 shrink-0 cursor-pointer"
+                  >
+                    Undo
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <Input
                     type="text"
                     required
+                    label="Customer Name"
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 dark:text-white"
                   />
-                </div>
-                <div>
-                  <label className="form-label">
-                    Mobile Phone *
-                  </label>
-                  <input
-                    type="text"
+                  <Input
+                    type="tel"
                     required
+                    label="Mobile Phone"
                     value={customerMobile}
                     onChange={(e) => setCustomerMobile(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 dark:text-white"
+                    placeholder="03XX-XXXXXXX"
                   />
-                </div>
-                <div>
-                  <label className="form-label">
-                    Address / City
-                  </label>
-                  <input
+                  <Input
                     type="text"
+                    label="Address / City"
                     value={customerAddress}
                     onChange={(e) => setCustomerAddress(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 dark:text-white"
                   />
                 </div>
+              )}
+
+              <div className="border-t border-slate-100 dark:border-slate-800 pt-3">
+                <EnhancedCustomerSupplierSelect
+                  selectedCustomerId={selectedCustomerId}
+                  allowedType="all"
+                  onSelectParty={(party) => {
+                    if (party) {
+                      setSelectedCustomerId(party.id);
+                      setReassignedTo({ id: party.id, name: party.name, mobile: party.mobile || '', address: party.address || '' });
+                    } else {
+                      // Cleared back to the original record holder.
+                      setReassignedTo(null);
+                      setSelectedCustomerId(originalParty?.id ?? null);
+                    }
+                  }}
+                  label={`Reassign to Another Saved Customer / Supplier (currently: ${originalParty?.name || 'unknown'})`}
+                  showJobHistoryCard={false}
+                />
               </div>
             </div>
 
             <div className="card-container space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-                <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+              <div className="flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-2">
+                <h2 className="section-title shrink-0">
                   Device Hardware Specs
                 </h2>
-                <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
-                  <button
-                    type="button"
-                    onClick={() => setJobType('laptop')}
-                    className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold transition-colors ${
-                      jobType === 'laptop' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-500'
-                    }`}
-                  >
-                    <Laptop className="w-3.5 h-3.5" /> Laptop
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setJobType('pc')}
-                    className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold transition-colors ${
-                      jobType === 'pc' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-500'
-                    }`}
-                  >
-                    <Monitor className="w-3.5 h-3.5" /> PC
-                  </button>
-                </div>
+                <ToggleGroup
+                  value={jobType}
+                  onChange={(v) => setJobType(v as JobType)}
+                  options={[
+                    { value: 'laptop', label: 'Laptop', icon: <Laptop className="w-3.5 h-3.5" /> },
+                    { value: 'pc', label: 'PC Desktop', icon: <Monitor className="w-3.5 h-3.5" /> },
+                  ]}
+                />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="form-label">
-                    Model Name
-                  </label>
-                  <input
-                    type="text"
-                    value={model}
-                    onChange={(e) => setModel(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <label className="form-label">
-                    Serial Number
-                  </label>
-                  <input
-                    type="text"
-                    value={serialNo}
-                    onChange={(e) => setSerialNo(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <label className="form-label">
-                    RAM Memory
-                  </label>
-                  <input
-                    type="text"
-                    value={ram}
-                    onChange={(e) => setRam(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <label className="form-label">
-                    Hard Drive / SSD
-                  </label>
-                  <input
-                    type="text"
-                    value={hard}
-                    onChange={(e) => setHard(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 dark:text-white"
+                <Input
+                  type="text"
+                  label="Model Name"
+                  value={model}
+                  onChange={(e) => setModel(e.target.value)}
+                  placeholder="e.g. Dell XPS 15 9500"
+                />
+                <Input
+                  type="text"
+                  label="Serial Number"
+                  value={serialNo}
+                  onChange={(e) => setSerialNo(e.target.value)}
+                  placeholder="e.g. SN-893201"
+                />
+
+                <DropdownSelect
+                  label="RAM Memory"
+                  options={RAM_OPTIONS}
+                  value={ram}
+                  onChange={setRam}
+                  allowCustom
+                  placeholder="Select RAM…"
+                />
+
+                <DropdownSelect
+                  label="Hard Drive / SSD"
+                  options={STORAGE_OPTIONS}
+                  value={hard}
+                  onChange={setHard}
+                  allowCustom
+                  placeholder="Select storage…"
+                />
+
+                <div className="sm:col-span-2">
+                  <DropdownSelect
+                    label="Processor / CPU"
+                    options={PROCESSOR_OPTIONS}
+                    value={processor}
+                    onChange={setProcessor}
+                    searchable
+                    allowCustom
+                    placeholder="Select processor…"
                   />
                 </div>
               </div>
@@ -288,19 +343,20 @@ export const EditJobPage: React.FC = () => {
           {/* Right Column: Symptoms, Dates & Charges */}
           <div className="space-y-6">
             <div className="card-container space-y-4">
-              <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-2">
+              <h2 className="section-title border-b border-slate-100 dark:border-slate-800 pb-2">
                 Symptoms & Problem Description
               </h2>
-              <textarea
+              <Textarea
                 rows={4}
+                required
                 value={symptoms}
                 onChange={(e) => setSymptoms(e.target.value)}
-                className="w-full p-3 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 dark:text-white"
+                placeholder="Describe reported fault…"
               />
             </div>
 
             <div className="card-container space-y-4">
-              <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-2">
+              <h2 className="section-title border-b border-slate-100 dark:border-slate-800 pb-2">
                 Charges & Repair Status
               </h2>
 
@@ -323,100 +379,76 @@ export const EditJobPage: React.FC = () => {
                   helperText="Target completion or collection date"
                 />
 
-                <div>
-                  <label className="form-label">
-                    Repair Charges (PKR)
-                  </label>
-                  <input
-                    type="number"
-                    value={charges}
-                    onChange={(e) => setCharges(parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 font-bold dark:text-white"
-                  />
-                </div>
+                <Input
+                  type="number"
+                  min={0}
+                  label="Repair Charges (PKR)"
+                  value={charges}
+                  onChange={(e) => setCharges(parseFloat(e.target.value) || 0)}
+                  className="[&_input]:font-bold [&_input]:text-slate-900 dark:[&_input]:text-white"
+                />
 
-                <div>
+                <div className="sm:col-span-2">
                   <label className="form-label">
                     Payment Status
                   </label>
-                  <div className="grid grid-cols-3 gap-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => setPaymentStatus('due')}
-                      className={`py-2 px-3 rounded-xl text-xs font-bold border ${
-                        paymentStatus === 'due' ? 'bg-rose-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                      }`}
-                    >
-                      DUE
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPaymentStatus('paid')}
-                      className={`py-2 px-3 rounded-xl text-xs font-bold border ${
-                        paymentStatus === 'paid' ? 'bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                      }`}
-                    >
-                      PAID
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPaymentStatus('complimentary')}
-                      className={`py-2 px-3 rounded-xl text-xs font-bold border ${
-                        paymentStatus === 'complimentary' ? 'bg-violet-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                      }`}
-                    >
-                      NO PAYMENT
-                    </button>
+                  <div className="pt-1">
+                    <ToggleGroup
+                      columns={3}
+                      variant="cards"
+                      value={paymentStatus}
+                      onChange={(v) => setPaymentStatus(v as PaymentStatus)}
+                      options={[
+                        { value: 'due', label: 'DUE', tone: 'danger' },
+                        { value: 'paid', label: 'PAID', tone: 'success' },
+                        { value: 'complimentary', label: 'NO PAYMENT', tone: 'violet' },
+                      ]}
+                    />
                   </div>
                 </div>
 
-                <div>
+                <div className="sm:col-span-2">
                   <label className="form-label">
                     Delivery Status
                   </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 pt-1">
-                    {([
-                      ['pending', 'Pending', 'bg-slate-500'],
-                      ['in_progress', 'In Progress', 'bg-blue-600'],
-                      ['in_diagnostics', 'Diagnostics', 'bg-violet-600'],
-                      ['ready', 'Ready', 'bg-amber-600'],
-                      ['delivered', 'Delivered', 'bg-emerald-600']
-                    ] as const).map(([val, label, activeBg]) => (
-                      <button
-                        key={val}
-                        type="button"
-                        onClick={() => setDeliverStatus(val as DeliverStatus)}
-                        className={`py-2 px-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
-                          deliverStatus === val
-                            ? `${activeBg} text-white`
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    ))}
+                  <div className="pt-1">
+                    <ToggleGroup
+                      columns={5}
+                      variant="cards"
+                      value={deliverStatus}
+                      onChange={(v) => setDeliverStatus(v as DeliverStatus)}
+                      options={[
+                        { value: 'pending', label: 'Pending', tone: 'neutral' },
+                        { value: 'in_progress', label: 'In Progress', tone: 'info' },
+                        { value: 'in_diagnostics', label: 'Diagnostics', tone: 'violet' },
+                        { value: 'ready', label: 'Ready', tone: 'warning' },
+                        { value: 'delivered', label: 'Delivered', tone: 'success' },
+                      ]}
+                    />
                   </div>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <Input
+                    type="text"
+                    label="Internal Notes"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Technician remarks, promised parts, etc."
+                  />
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
-          <button
-            type="button"
-            onClick={() => navigate(`/jobs/${job.id}`)}
-            className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-semibold"
-          >
+        <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+          <Button size="lg" variant="secondary" onClick={() => navigate(`/jobs/${job.id}`)}>
             Cancel
-          </button>
-          <button
-            type="submit"
-            className="inline-flex items-center gap-2 px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-sm font-bold shadow-md"
-          >
-            <Save className="w-4 h-4" />
-            <span>Update Job Record</span>
-          </button>
+          </Button>
+          <Button size="lg" type="submit" icon={<Save className="w-4 h-4" />}>
+            Update Job Record
+          </Button>
         </div>
       </form>
     </div>

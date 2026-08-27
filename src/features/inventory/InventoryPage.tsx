@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import {
   Package,
   Plus,
@@ -17,7 +17,6 @@ import {
   ArrowDownRight,
   CheckCircle2,
   XCircle,
-  X,
   MapPin,
   Tag,
   Boxes,
@@ -29,6 +28,12 @@ import { toast } from 'sonner';
 import { query, execute } from '../../lib/db';
 import { InventoryItem, InventoryTransaction, InventoryCategory, InventoryStats } from '../../types/inventory';
 import { exportInventoryToCSV } from '../../lib/export-utils';
+import { Modal } from '../../components/ui/Modal';
+import { DropdownSelect } from '../../components/ui/DropdownSelect';
+import { ToggleGroup } from '../../components/ui/ToggleGroup';
+import { Input } from '../../components/ui/Input';
+import { Textarea } from '../../components/ui/Textarea';
+import { Button } from '../../components/ui/Button';
 
 const CATEGORIES: InventoryCategory[] = [
   'RAM',
@@ -370,19 +375,20 @@ export const InventoryPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2.5">
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => exportInventoryToCSV(items)}
-            className="btn-secondary text-xs"
             title="Export full inventory report to CSV"
           >
             <Download className="w-4 h-4" />
             <span>Export CSV</span>
-          </button>
+          </Button>
 
-          <button onClick={handleOpenAdd} className="btn-primary text-xs">
+          <Button size="sm" onClick={handleOpenAdd}>
             <Plus className="w-4 h-4" />
             <span>Add New Part</span>
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -513,31 +519,15 @@ export const InventoryPage: React.FC = () => {
         {/* Navigation Tabs & Controls Bar */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
           {/* Tabs */}
-          <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl w-fit">
-            <button
-              onClick={() => setActiveTab('ITEMS')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                activeTab === 'ITEMS'
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs'
-                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <Boxes className="w-4 h-4" />
-              <span>Stock Catalog ({items.length})</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('TRANSACTIONS')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                activeTab === 'TRANSACTIONS'
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs'
-                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <History className="w-4 h-4" />
-              <span>Movement History ({transactions.length})</span>
-            </button>
-          </div>
+          <ToggleGroup
+            variant="segmented"
+            value={activeTab}
+            onChange={(v) => setActiveTab(v as 'ITEMS' | 'TRANSACTIONS')}
+            options={[
+              { value: 'ITEMS', label: `Stock Catalog (${items.length})`, icon: <Boxes className="w-4 h-4" /> },
+              { value: 'TRANSACTIONS', label: `Movement History (${transactions.length})`, icon: <History className="w-4 h-4" /> }
+            ]}
+          />
 
           {/* Search & Filters */}
           {activeTab === 'ITEMS' && (
@@ -555,30 +545,30 @@ export const InventoryPage: React.FC = () => {
               </div>
 
               {/* Category Filter */}
-              <select
+              <DropdownSelect
+                size="sm"
+                className="w-40"
                 value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="input-field text-xs w-36 font-medium cursor-pointer"
-              >
-                <option value="ALL">All Categories</option>
-                {CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => setSelectedCategory(v)}
+                options={[
+                  { value: 'ALL', label: 'All Categories' },
+                  ...CATEGORIES.map((cat) => ({ value: cat, label: cat }))
+                ]}
+              />
 
               {/* Stock Status Filter */}
-              <select
+              <DropdownSelect
+                size="sm"
+                className="w-40"
                 value={stockStatusFilter}
-                onChange={(e) => setStockStatusFilter(e.target.value)}
-                className="input-field text-xs w-36 font-medium cursor-pointer"
-              >
-                <option value="ALL">All Stock Levels</option>
-                <option value="IN_STOCK">In Stock</option>
-                <option value="LOW_STOCK">Low Stock Alert</option>
-                <option value="OUT_OF_STOCK">Out of Stock</option>
-              </select>
+                onChange={(v) => setStockStatusFilter(v)}
+                options={[
+                  { value: 'ALL', label: 'All Stock Levels' },
+                  { value: 'IN_STOCK', label: 'In Stock' },
+                  { value: 'LOW_STOCK', label: 'Low Stock Alert' },
+                  { value: 'OUT_OF_STOCK', label: 'Out of Stock' }
+                ]}
+              />
             </div>
           )}
         </div>
@@ -806,319 +796,177 @@ export const InventoryPage: React.FC = () => {
       </div>
 
       {/* Add / Edit Part Modal */}
-      <AnimatePresence>
-        {isItemModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 ">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl space-y-5"
-            >
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                <h3 className="font-bold text-base text-slate-900 dark:text-white font-heading">
-                  {editingItem ? 'Edit Spare Part' : 'Add New Spare Part'}
-                </h3>
-                <button
-                  onClick={() => setIsItemModalOpen(false)}
-                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+      <Modal
+        open={isItemModalOpen}
+        onClose={() => setIsItemModalOpen(false)}
+        title={editingItem ? 'Edit Spare Part' : 'Add New Spare Part'}
+        size="md"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setIsItemModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" form="inventory-item-form">
+              {editingItem ? 'Update Part' : 'Save New Part'}
+            </Button>
+          </>
+        }
+      >
+        <form id="inventory-item-form" onSubmit={handleSaveItem} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              label="Part SKU / Number"
+              required
+              value={formData.part_number}
+              onChange={(e) => setFormData({ ...formData, part_number: e.target.value })}
+              placeholder="e.g. RAM-DDR4-8GB"
+            />
 
-              <form onSubmit={handleSaveItem} className="space-y-4 text-xs">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                      Part SKU / Number *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.part_number}
-                      onChange={(e) => setFormData({ ...formData, part_number: e.target.value })}
-                      placeholder="e.g. RAM-DDR4-8GB"
-                      className="input-field font-mono"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                      Category *
-                    </label>
-                    <select
-                      value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value as InventoryCategory })}
-                      className="input-field font-semibold cursor-pointer"
-                    >
-                      {CATEGORIES.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                    Part Name / Description *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="e.g. Kingston DDR4 8GB 3200MHz Laptop RAM"
-                    className="input-field"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                      Initial Quantity
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={formData.quantity}
-                      onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 0 })}
-                      className="input-field font-mono"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                      Min Alert Threshold
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={formData.min_threshold}
-                      onChange={(e) => setFormData({ ...formData, min_threshold: parseInt(e.target.value) || 1 })}
-                      className="input-field font-mono"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                      Purchase Cost (PKR)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={formData.unit_cost}
-                      onChange={(e) => setFormData({ ...formData, unit_cost: parseFloat(e.target.value) || 0 })}
-                      className="input-field font-mono"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                      Selling Price (PKR)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={formData.selling_price}
-                      onChange={(e) => setFormData({ ...formData, selling_price: parseFloat(e.target.value) || 0 })}
-                      className="input-field font-mono"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                      Shelf / Bin Location
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.location}
-                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                      placeholder="e.g. Bin A-02"
-                      className="input-field"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                      Supplier Info
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.supplier_info}
-                      onChange={(e) => setFormData({ ...formData, supplier_info: e.target.value })}
-                      placeholder="e.g. Al-Madina Computers"
-                      className="input-field"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                    Notes & Compatibility
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    placeholder="e.g. Compatible with Dell, HP, Lenovo 8th-11th Gen"
-                    className="input-field"
-                  />
-                </div>
-
-                <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                  <button
-                    type="button"
-                    onClick={() => setIsItemModalOpen(false)}
-                    className="btn-secondary text-xs"
-                  >
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn-primary text-xs">
-                    {editingItem ? 'Update Part' : 'Save New Part'}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
+            <DropdownSelect
+              label="Category"
+              required
+              value={formData.category}
+              onChange={(v) => setFormData({ ...formData, category: v as InventoryCategory })}
+              options={CATEGORIES.map((cat) => ({ value: cat, label: cat }))}
+              placeholder="Select category…"
+            />
           </div>
-        )}
-      </AnimatePresence>
+
+          <Input
+            label="Part Name / Description"
+            required
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            placeholder="e.g. Kingston DDR4 8GB 3200MHz Laptop RAM"
+          />
+
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Initial Quantity"
+              type="number"
+              min={0}
+              value={formData.quantity}
+              onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 0 })}
+            />
+            <Input
+              label="Min Alert Threshold"
+              type="number"
+              min={1}
+              value={formData.min_threshold}
+              onChange={(e) => setFormData({ ...formData, min_threshold: parseInt(e.target.value) || 1 })}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Purchase Cost (PKR)"
+              type="number"
+              min={0}
+              value={formData.unit_cost}
+              onChange={(e) => setFormData({ ...formData, unit_cost: parseFloat(e.target.value) || 0 })}
+            />
+            <Input
+              label="Selling Price (PKR)"
+              type="number"
+              min={0}
+              value={formData.selling_price}
+              onChange={(e) => setFormData({ ...formData, selling_price: parseFloat(e.target.value) || 0 })}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Shelf / Bin Location"
+              value={formData.location}
+              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              placeholder="e.g. Bin A-02"
+            />
+            <Input
+              label="Supplier Info"
+              value={formData.supplier_info}
+              onChange={(e) => setFormData({ ...formData, supplier_info: e.target.value })}
+              placeholder="e.g. Al-Madina Computers"
+            />
+          </div>
+
+          <Textarea
+            rows={2}
+            label="Notes & Compatibility"
+            value={formData.notes}
+            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+            placeholder="e.g. Compatible with Dell, HP, Lenovo 8th-11th Gen"
+          />
+        </form>
+      </Modal>
 
       {/* Stock Adjust / Restock Modal */}
-      <AnimatePresence>
-        {isStockModalOpen && stockItem && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 ">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4"
-            >
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                <div>
-                  <h3 className="font-bold text-base text-slate-900 dark:text-white font-heading">
-                    Adjust Stock Qty
-                  </h3>
-                  <p className="text-xs text-slate-600 dark:text-slate-300 font-mono font-bold">
-                    {stockItem.name} ({stockItem.quantity} in stock)
-                  </p>
-                </div>
-                <button
-                  onClick={() => setIsStockModalOpen(false)}
-                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+      <Modal
+        open={isStockModalOpen && !!stockItem}
+        onClose={() => setIsStockModalOpen(false)}
+        title="Adjust Stock Qty"
+        size="sm"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setIsStockModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" form="inventory-stock-form">
+              Confirm Stock Update
+            </Button>
+          </>
+        }
+      >
+        <form id="inventory-stock-form" onSubmit={handleSaveStockAdjust} className="space-y-4">
+          {stockItem && (
+            <p className="text-xs text-slate-600 dark:text-slate-300 font-mono font-bold">
+              {stockItem.name} ({stockItem.quantity} in stock)
+            </p>
+          )}
 
-              <form onSubmit={handleSaveStockAdjust} className="space-y-4 text-xs">
-                <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                    Action Type
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setStockChangeType('IN')}
-                      className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
-                        stockChangeType === 'IN'
-                          ? 'bg-emerald-500/15 border-emerald-500 text-emerald-600 dark:text-emerald-400'
-                          : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'
-                      }`}
-                    >
-                      <Plus className="w-3.5 h-3.5" /> Restock IN
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setStockChangeType('OUT')}
-                      className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
-                        stockChangeType === 'OUT'
-                          ? 'bg-rose-500/15 border-rose-500 text-rose-600 dark:text-rose-400'
-                          : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'
-                      }`}
-                    >
-                      <ArrowDownRight className="w-3.5 h-3.5" /> Deduct OUT
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setStockChangeType('ADJUST')}
-                      className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
-                        stockChangeType === 'ADJUST'
-                          ? 'bg-slate-500/15 border-slate-500 text-slate-600 dark:text-slate-300'
-                          : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'
-                      }`}
-                    >
-                      <RefreshCw className="w-3.5 h-3.5" /> Set Exact Qty
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                      {stockChangeType === 'ADJUST' ? 'New Exact Quantity' : 'Quantity Units'} *
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      required
-                      value={stockQty}
-                      onChange={(e) => setStockQty(parseInt(e.target.value) || 1)}
-                      className="input-field font-mono font-bold"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                      Unit Cost (PKR)
-                    </label>
-                    <input
-                      type="number"
-                      value={stockCost}
-                      onChange={(e) => setStockCost(parseFloat(e.target.value) || 0)}
-                      className="input-field font-mono"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                    Movement Reason / Notes
-                  </label>
-                  <input
-                    type="text"
-                    value={stockNotes}
-                    onChange={(e) => setStockNotes(e.target.value)}
-                    placeholder="e.g. Supplier restock or Used on Job TK-1002"
-                    className="input-field"
-                  />
-                </div>
-
-                <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                  <button
-                    type="button"
-                    onClick={() => setIsStockModalOpen(false)}
-                    className="btn-secondary text-xs"
-                  >
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn-primary text-xs">
-                    Confirm Stock Update
-                  </button>
-                </div>
-              </form>
-            </motion.div>
+          <div>
+            <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
+              Action Type
+            </label>
+            <ToggleGroup
+              options={[
+                { value: 'IN', label: 'Restock IN', icon: <Plus size={16} />, tone: 'success' },
+                { value: 'OUT', label: 'Deduct OUT', icon: <ArrowDownRight size={16} />, tone: 'danger' },
+                { value: 'ADJUST', label: 'Set Exact Qty', icon: <RefreshCw size={16} />, tone: 'neutral' }
+              ]}
+              value={stockChangeType}
+              onChange={(v) => setStockChangeType(v as 'IN' | 'OUT' | 'ADJUST')}
+              variant="cards"
+              columns={3}
+            />
           </div>
-        )}
-      </AnimatePresence>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              type="number"
+              min={1}
+              required
+              label={stockChangeType === 'ADJUST' ? 'New Exact Quantity *' : 'Quantity Units *'}
+              value={stockQty}
+              onChange={(e) => setStockQty(parseInt(e.target.value) || 1)}
+            />
+            <Input
+              type="number"
+              label="Unit Cost (PKR)"
+              value={stockCost}
+              onChange={(e) => setStockCost(parseFloat(e.target.value) || 0)}
+            />
+          </div>
+
+          <Input
+            type="text"
+            label="Movement Reason / Notes"
+            value={stockNotes}
+            onChange={(e) => setStockNotes(e.target.value)}
+            placeholder="e.g. Supplier restock or Used on Job TK-1002"
+          />
+
+        </form>
+      </Modal>
     </div>
   );
 };

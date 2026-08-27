@@ -33,6 +33,10 @@ import { exportCustomersToCSV } from '../../lib/export-utils';
 import { StatusBadge } from '../../components/shared/StatusBadge';
 import { TokenDisplay } from '../../components/shared/TokenDisplay';
 import { useCustomersStore } from '../../store/customers';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { Modal } from '../../components/ui/Modal';
+import { ToggleGroup } from '../../components/ui/ToggleGroup';
 
 export const CustomersPage: React.FC = () => {
   const navigate = useNavigate();
@@ -265,21 +269,20 @@ export const CustomersPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <button
+          <Button
+            variant="secondary"
             onClick={() => exportCustomersToCSV(filtered)}
-            className="btn-secondary"
+            icon={<Download className="w-4 h-4 text-slate-500" />}
           >
-            <Download className="w-4 h-4 text-slate-500" />
-            <span>Export CSV</span>
-          </button>
+            Export CSV
+          </Button>
 
-          <button
+          <Button
             onClick={() => setIsAddModalOpen(true)}
-            className="btn-primary"
+            icon={<Plus className="w-4 h-4" />}
           >
-            <Plus className="w-4 h-4" />
-            <span>Add Customer / Supplier</span>
-          </button>
+            Add Customer / Supplier
+          </Button>
         </div>
       </div>
 
@@ -287,38 +290,15 @@ export const CustomersPage: React.FC = () => {
       <div className="card-container p-4 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           {/* Category Tabs */}
-          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-            <button
-              onClick={() => setTypeTab('all')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                typeTab === 'all'
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
-                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              All Parties ({customers.length})
-            </button>
-            <button
-              onClick={() => setTypeTab('customer')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                typeTab === 'customer'
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              Retail Customers ({customerCount})
-            </button>
-            <button
-              onClick={() => setTypeTab('supplier')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                typeTab === 'supplier'
-                  ? 'bg-indigo-600 text-white shadow-xs'
-                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              Market Suppliers / Dealers ({supplierCount})
-            </button>
-          </div>
+          <ToggleGroup
+            value={typeTab}
+            onChange={(v) => setTypeTab(v as 'all' | 'customer' | 'supplier')}
+            options={[
+              { value: 'all', label: `All Parties (${customers.length})` },
+              { value: 'customer', label: `Customers (${customerCount})` },
+              { value: 'supplier', label: `Suppliers (${supplierCount})` },
+            ]}
+          />
 
           {/* Instant Search Box */}
           <div className="relative max-w-md w-full">
@@ -728,185 +708,117 @@ export const CustomersPage: React.FC = () => {
       </AnimatePresence>
 
       {/* MODAL: ADD / EDIT CUSTOMER / SUPPLIER */}
-      <AnimatePresence>
-        {(isAddModalOpen || editingParty !== null) && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-2xl max-w-md w-full space-y-5"
-            >
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                <h3 className="font-bold text-base text-slate-900 dark:text-white font-heading">
-                  {editingParty ? `Edit ${editingParty.party_type === 'supplier' ? 'Supplier' : 'Customer'}` : 'Add New Customer / Market Supplier'}
-                </h3>
-                <button
-                  onClick={closePartyForm}
-                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <form onSubmit={handleAddParty} className="space-y-4">
-                <div>
-                  <label className="form-label">
-                    Party Type *
-                  </label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setNewPartyType('customer')}
-                      className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl font-bold text-xs border transition-all cursor-pointer ${
-                        newPartyType === 'customer'
-                          ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                          : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
-                      }`}
-                    >
-                      <User className="w-3.5 h-3.5" /> Retail Customer
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setNewPartyType('supplier')}
-                      className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl font-bold text-xs border transition-all cursor-pointer ${
-                        newPartyType === 'supplier'
-                          ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                          : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
-                      }`}
-                    >
-                      <Building2 className="w-3.5 h-3.5" /> Market Supplier / Dealer
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="form-label">
-                    {newPartyType === 'supplier' ? 'Supplier / Dealer Name *' : 'Customer Name *'}
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                    placeholder={newPartyType === 'supplier' ? 'e.g. Al-Madina Computers Hafeez Center' : 'e.g. Tariq Mahmood'}
-                    className="input-field"
-                  />
-                </div>
-
-                <div>
-                  <label className="form-label">
-                    Mobile Phone
-                  </label>
-                  <input
-                    type="text"
-                    value={newMobile}
-                    onChange={(e) => setNewMobile(e.target.value)}
-                    placeholder="0300-1234567"
-                    className="input-field"
-                  />
-                </div>
-
-                <div>
-                  <label className="form-label">
-                    Address / Market Location
-                  </label>
-                  <input
-                    type="text"
-                    value={newAddress}
-                    onChange={(e) => setNewAddress(e.target.value)}
-                    placeholder={newPartyType === 'supplier' ? 'Hafeez Center 2nd Floor Lahore' : 'Gulberg, Lahore'}
-                    className="input-field"
-                  />
-                </div>
-
-                <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-                  <button
-                    type="button"
-                    onClick={closePartyForm}
-                    className="btn-secondary"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="btn-primary"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>{editingParty ? 'Save Changes' : 'Save Party'}</span>
-                  </button>
-                </div>
-              </form>
-            </motion.div>
+      <Modal
+        open={isAddModalOpen || editingParty !== null}
+        onClose={closePartyForm}
+        title={editingParty ? `Edit ${editingParty.party_type === 'supplier' ? 'Supplier' : 'Customer'}` : 'Add New Customer / Market Supplier'}
+        size="sm"
+      >
+        <form onSubmit={handleAddParty} className="space-y-4">
+          <div>
+            <label className="form-label">
+              Party Type
+            </label>
+            <ToggleGroup
+              columns={2}
+              variant="cards"
+              value={newPartyType}
+              onChange={(v) => setNewPartyType(v as PartyType)}
+              options={[
+                {
+                  value: 'customer',
+                  label: 'Retail Customer',
+                  icon: <User className="w-4 h-4" />,
+                  tone: 'info',
+                },
+                {
+                  value: 'supplier',
+                  label: 'Market Supplier / Dealer',
+                  icon: <Building2 className="w-4 h-4" />,
+                  tone: 'violet',
+                },
+              ]}
+            />
           </div>
-        )}
-      </AnimatePresence>
+
+          <Input
+            type="text"
+            required
+            label={newPartyType === 'supplier' ? 'Supplier / Dealer Name' : 'Customer Name'}
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder={newPartyType === 'supplier' ? 'e.g. Al-Madina Computers Hafeez Center' : 'e.g. Tariq Mahmood'}
+          />
+
+          <Input
+            type="tel"
+            label="Mobile Phone"
+            value={newMobile}
+            onChange={(e) => setNewMobile(e.target.value)}
+            placeholder="0300-1234567"
+          />
+
+          <Input
+            type="text"
+            label="Address / Market Location"
+            value={newAddress}
+            onChange={(e) => setNewAddress(e.target.value)}
+            placeholder={newPartyType === 'supplier' ? 'Hafeez Center 2nd Floor Lahore' : 'Gulberg, Lahore'}
+          />
+
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <Button variant="secondary" onClick={closePartyForm}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              loading={isSubmitting}
+              icon={<CheckCircle2 className="w-4 h-4" />}
+            >
+              {editingParty ? 'Save Changes' : 'Save Party'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
       {/* QUICK PAYMENT MODAL */}
-      <AnimatePresence>
-        {isPaymentModalOpen && selectedParty && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-2xl max-w-sm w-full space-y-4"
-            >
-              <h3 className="font-bold text-base text-slate-900 dark:text-white font-heading">
-                Post Voucher for {selectedParty.name}
-              </h3>
+      <Modal
+        open={isPaymentModalOpen && selectedParty !== null}
+        onClose={() => setIsPaymentModalOpen(false)}
+        title={`Post Voucher for ${selectedParty?.name || ''}`}
+        size="sm"
+      >
+        <form onSubmit={handleQuickPaymentSubmit} className="space-y-3">
+          <Input
+            type="number"
+            required
+            min={1}
+            label="Amount (PKR)"
+            value={paymentAmount}
+            onChange={(e) => setPaymentAmount(e.target.value)}
+            placeholder="e.g. 5000"
+            className="[&_input]:font-bold"
+          />
 
-              <form onSubmit={handleQuickPaymentSubmit} className="space-y-3">
-                <div>
-                  <label className="form-label">
-                    Amount (PKR) *
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min={1}
-                    value={paymentAmount}
-                    onChange={(e) => setPaymentAmount(e.target.value)}
-                    placeholder="e.g. 5000"
-                    className="input-field font-bold"
-                  />
-                </div>
+          <Input
+            type="text"
+            label="Description"
+            value={paymentDesc}
+            onChange={(e) => setPaymentDesc(e.target.value)}
+            placeholder="e.g. Advance cash received"
+          />
 
-                <div>
-                  <label className="form-label">
-                    Description
-                  </label>
-                  <input
-                    type="text"
-                    value={paymentDesc}
-                    onChange={(e) => setPaymentDesc(e.target.value)}
-                    placeholder="e.g. Advance cash received"
-                    className="input-field"
-                  />
-                </div>
-
-                <div className="flex items-center justify-end gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsPaymentModalOpen(false)}
-                    className="btn-secondary"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="btn-primary"
-                  >
-                    Post Entry
-                  </button>
-                </div>
-              </form>
-            </motion.div>
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <Button variant="secondary" onClick={() => setIsPaymentModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit">
+              Post Entry
+            </Button>
           </div>
-        )}
-      </AnimatePresence>
+        </form>
+      </Modal>
     </motion.div>
   );
 };

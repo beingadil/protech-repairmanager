@@ -1,4 +1,5 @@
 import React from 'react';
+import FieldShell from './FieldShell';
 
 interface RadioOption {
   value: string;
@@ -32,53 +33,45 @@ export const RadioGroup: React.FC<RadioGroupProps> = ({
   direction = 'vertical',
   className = '',
 }) => {
-  const groupId = name.toLowerCase().replace(/\s+/g, '-');
-
   return (
-    <div className={`space-y-2 ${className}`}>
-      {label && (
-        <label className={`field-label ${required ? 'field-required' : ''}`}>
-          {label}
-        </label>
+    <FieldShell label={label} hint={hint} error={error} required={required} fullWidth={false} className={className}>
+      {(aria) => (
+        <div
+          role="radiogroup"
+          aria-label={label}
+          aria-describedby={aria['aria-describedby']}
+          className={direction === 'horizontal' ? 'flex flex-wrap gap-4' : 'space-y-2'}
+        >
+          {options.map((opt) => (
+            <label
+              key={opt.value}
+              className={`inline-flex items-start gap-2 cursor-pointer ${
+                opt.disabled ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            >
+              <input
+                type="radio"
+                name={name}
+                value={opt.value}
+                checked={value === opt.value}
+                onChange={() => onChange?.(opt.value)}
+                disabled={opt.disabled}
+                className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-slate-900 dark:accent-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
+              />
+              <span className="text-sm text-slate-700 dark:text-slate-300 leading-snug">
+                {opt.label}
+                {opt.hint && (
+                  <span className="block text-[11px] text-slate-400 dark:text-slate-500">{opt.hint}</span>
+                )}
+              </span>
+            </label>
+          ))}
+        </div>
       )}
-      <div
-        role="radiogroup"
-        aria-labelledby={label ? `${groupId}-label` : undefined}
-        aria-describedby={hint ? `${groupId}-hint` : error ? `${groupId}-error` : undefined}
-        className={direction === 'horizontal' ? 'flex flex-wrap gap-4' : 'space-y-2'}
-      >
-        {options.map((opt) => (
-          <label
-            key={opt.value}
-            className={`inline-flex items-center gap-2 cursor-pointer ${opt.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            <input
-              type="radio"
-              name={name}
-              value={opt.value}
-              checked={value === opt.value}
-              onChange={() => onChange?.(opt.value)}
-              disabled={opt.disabled}
-              required={required}
-              className="radio"
-            />
-            <span className="text-sm text-text-primary">{opt.label}</span>
-          </label>
-        ))}
-      </div>
-      {hint && !error && (
-        <p id={`${groupId}-hint`} className="field-hint">{hint}</p>
-      )}
-      {error && (
-        <p id={`${groupId}-error`} className="field-error" role="alert">
-          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 10-2 0v6a1 1 0 102 0V5z" clipRule="evenodd" />
-          </svg>
-          {error}
-        </p>
-      )}
-    </div>
+    </FieldShell>
   );
 };
+
+RadioGroup.displayName = 'RadioGroup';
 
 export default RadioGroup;

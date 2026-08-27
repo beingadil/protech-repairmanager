@@ -1,15 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import {
   TrendingUp,
   TrendingDown,
   Wallet,
   Plus,
   Search,
-  Filter,
   Download,
-  Calendar,
-  DollarSign,
   ArrowUpRight,
   ArrowDownLeft,
   Trash2,
@@ -19,8 +16,7 @@ import {
   Building2,
   X,
   CheckCircle2,
-  PlusCircle,
-  Clock
+  PlusCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { query, execute, batch } from '../../lib/db';
@@ -35,6 +31,12 @@ import {
 import { formatCurrency, formatDate } from '../../lib/utils';
 import { exportFinancialTransactionsToCSV } from '../../lib/export-utils';
 import { EnhancedCustomerSupplierSelect } from '../../components/shared/EnhancedCustomerSupplierSelect';
+import { EnhancedDatePicker } from '../../components/common/EnhancedDatePicker';
+import { Modal } from '../../components/ui/Modal';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { DropdownSelect } from '../../components/ui/DropdownSelect';
+import { ToggleGroup } from '../../components/ui/ToggleGroup';
 import { Job } from '../../types/job';
 
 const CATEGORY_OPTIONS: { value: PaymentCategory; label: string; type: TransactionType }[] = [
@@ -275,8 +277,7 @@ export const PaymentModulePage: React.FC = () => {
   };
 
   // Submit Single Entry
-  const handleSingleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const postSingleVoucher = async () => {
     const amountNum = parseFloat(entryAmount);
     if (!amountNum || amountNum <= 0) {
       toast.error('Please enter a valid amount greater than 0.');
@@ -419,9 +420,13 @@ export const PaymentModulePage: React.FC = () => {
   const entryNet = entryCharges - entryDiscountNum;
   const entryBalanceDue = Math.max(0, entryNet - entryPaidBefore);
 
-  // Submit Multi (Batch) Entries
-  const handleMultiSubmit = async (e: React.FormEvent) => {
+  const handleSingleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    postSingleVoucher();
+  };
+
+  // Submit Multi (Batch) Entries
+  const postBatchEntries = async () => {
     const validRows = multiRows.filter((r) => r.amount > 0 && r.description.trim());
 
     if (validRows.length === 0) {
@@ -505,6 +510,11 @@ export const PaymentModulePage: React.FC = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleMultiSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    postBatchEntries();
   };
 
   // Add row to multi entry table
@@ -665,32 +675,31 @@ export const PaymentModulePage: React.FC = () => {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2 flex-wrap">
-          <button
+          <Button
+            variant="secondary"
             onClick={() => exportFinancialTransactionsToCSV(filteredTransactions)}
-            className="btn-secondary"
+            icon={<Download className="w-4 h-4 text-slate-500" />}
           >
-            <Download className="w-4 h-4 text-slate-500" />
-            <span>Export CSV</span>
-          </button>
+            Export CSV
+          </Button>
 
-          <button
+          <Button
+            variant="secondary"
             onClick={() => setIsMultiModalOpen(true)}
-            className="btn-secondary text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800/40"
+            icon={<Receipt className="w-4 h-4" />}
           >
-            <Receipt className="w-4 h-4" />
-            <span>Multi-Row Batch Entry</span>
-          </button>
+            Multi-Row Batch Entry
+          </Button>
 
-          <button
+          <Button
             onClick={() => {
               setEntryType('credit');
               setIsSingleModalOpen(true);
             }}
-            className="btn-primary"
+            icon={<Plus className="w-4 h-4" />}
           >
-            <Plus className="w-4 h-4" />
-            <span>New Voucher Entry</span>
-          </button>
+            New Voucher Entry
+          </Button>
         </div>
       </div>
 
@@ -795,47 +804,41 @@ export const PaymentModulePage: React.FC = () => {
           </div>
 
           {/* Type Filter */}
-          <div>
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value as any)}
-              className="input-field cursor-pointer"
-            >
-              <option value="all">Type: All (Credit & Debit)</option>
-              <option value="credit">Credit (+) Income Only</option>
-              <option value="debit">Debit (-) Expenses Only</option>
-            </select>
-          </div>
+          <DropdownSelect
+            value={typeFilter}
+            onChange={(v) => setTypeFilter(v as 'all' | 'credit' | 'debit')}
+            options={[
+              { value: 'all', label: 'Type: All (Credit & Debit)' },
+              { value: 'credit', label: 'Credit (+) Income Only' },
+              { value: 'debit', label: 'Debit (-) Expenses Only' },
+            ]}
+          />
 
           {/* Date Range Filter */}
-          <div>
-            <select
-              value={dateRangeFilter}
-              onChange={(e) => setDateRangeFilter(e.target.value as any)}
-              className="input-field cursor-pointer"
-            >
-              <option value="all">Date: All Time</option>
-              <option value="today">Date: Today Only</option>
-              <option value="week">Date: Last 7 Days</option>
-              <option value="month">Date: Last 30 Days</option>
-            </select>
-          </div>
+          <DropdownSelect
+            value={dateRangeFilter}
+            onChange={(v) => setDateRangeFilter(v as 'all' | 'today' | 'week' | 'month')}
+            options={[
+              { value: 'all', label: 'Date: All Time' },
+              { value: 'today', label: 'Date: Today Only' },
+              { value: 'week', label: 'Date: Last 7 Days' },
+              { value: 'month', label: 'Date: Last 30 Days' },
+            ]}
+          />
 
           {/* Category Filter */}
-          <div>
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="input-field cursor-pointer"
-            >
-              <option value="all">Category: All Categories</option>
-              {CATEGORY_OPTIONS.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.type === 'credit' ? '[+] ' : '[-] '} {c.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          <DropdownSelect
+            value={categoryFilter}
+            onChange={setCategoryFilter}
+            searchable
+            options={[
+              { value: 'all', label: 'Category: All Categories' },
+              ...CATEGORY_OPTIONS.map((c) => ({
+                value: c.value,
+                label: `${c.type === 'credit' ? '[+]' : '[-]'} ${c.label}`,
+              })),
+            ]}
+          />
         </div>
 
         {/* Search Results Summary */}
@@ -992,215 +995,148 @@ export const PaymentModulePage: React.FC = () => {
       </div>
 
       {/* MODAL 1: Single Voucher Entry */}
-      <AnimatePresence>
-        {isSingleModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-2xl max-w-lg w-full space-y-5"
-            >
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                <div className="flex items-center gap-2">
-                  <Receipt className="w-5 h-5 text-slate-600 dark:text-slate-300" />
-                  <h3 className="font-bold text-base text-slate-900 dark:text-white font-heading">
-                    New Financial Voucher Entry
-                  </h3>
-                </div>
-                <button
-                  onClick={() => setIsSingleModalOpen(false)}
-                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+      <Modal
+        open={isSingleModalOpen}
+        onClose={() => setIsSingleModalOpen(false)}
+        title="New Financial Voucher Entry"
+        size="md"
+      >
+        <form onSubmit={handleSingleSubmit} className="space-y-4">
+          {/* Credit vs Debit Switch */}
+          <div>
+            <label className="form-label">
+              Transaction Flow
+            </label>
+            <ToggleGroup
+              columns={2}
+              variant="cards"
+              value={entryType}
+              onChange={(v) => {
+                setEntryType(v as TransactionType);
+                setEntryCategory(v === 'credit' ? 'repair_income' : 'market_supplier_payment');
+              }}
+              options={[
+                {
+                  value: 'credit',
+                  label: 'CREDIT',
+                  sublabel: 'Money In / Income',
+                  icon: <ArrowDownLeft className="w-4 h-4" />,
+                  tone: 'success',
+                },
+                {
+                  value: 'debit',
+                  label: 'DEBIT',
+                  sublabel: 'Money Out / Expense',
+                  icon: <ArrowUpRight className="w-4 h-4" />,
+                  tone: 'danger',
+                },
+              ]}
+            />
+          </div>
 
-              <form onSubmit={handleSingleSubmit} className="space-y-4">
-                {/* Credit vs Debit Switch */}
-                <div>
-                  <label className="form-label">
-                    Transaction Flow *
-                  </label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEntryType('credit');
-                        setEntryCategory('repair_income');
-                      }}
-                      className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-bold text-xs border transition-all cursor-pointer ${
-                        entryType === 'credit'
-                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                          : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
-                      }`}
-                    >
-                      <ArrowDownLeft className="w-4 h-4" /> CREDIT (Money In / Income)
-                    </button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <EnhancedDatePicker
+              label="Date"
+              type="receive"
+              required
+              value={entryDate}
+              onChange={setEntryDate}
+            />
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEntryType('debit');
-                        setEntryCategory('market_supplier_payment');
-                      }}
-                      className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-bold text-xs border transition-all cursor-pointer ${
-                        entryType === 'debit'
-                          ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
-                          : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
-                      }`}
-                    >
-                      <ArrowUpRight className="w-4 h-4" /> DEBIT (Money Out / Expense)
-                    </button>
-                  </div>
-                </div>
+            <Input
+              type="number"
+              required
+              min={1}
+              label="Amount (PKR)"
+              value={entryAmount}
+              onChange={(e) => setEntryAmount(e.target.value)}
+              placeholder="e.g. 5000"
+              className="[&_input]:font-bold [&_input]:text-slate-900 dark:[&_input]:text-white"
+            />
+          </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="form-label">
-                      Date *
-                    </label>
-                    <input
-                      type="date"
-                      required
-                      value={entryDate}
-                      onChange={(e) => setEntryDate(e.target.value)}
-                      className="input-field"
-                    />
-                  </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <DropdownSelect
+              label="Category"
+              required
+              value={entryCategory}
+              onChange={(v) => setEntryCategory(v as PaymentCategory)}
+              options={CATEGORY_OPTIONS.filter((c) => c.type === entryType)}
+            />
 
-                  <div>
-                    <label className="form-label">
-                      Amount (PKR) *
-                    </label>
-                    <input
-                      type="number"
-                      required
-                      min={1}
-                      value={entryAmount}
-                      onChange={(e) => setEntryAmount(e.target.value)}
-                      placeholder="e.g. 5000"
-                      className="input-field font-bold text-slate-900 dark:text-white"
-                    />
-                  </div>
-                </div>
+            <DropdownSelect
+              label="Payment Account / Method"
+              required
+              value={entryMethod}
+              onChange={(v) => setEntryMethod(v as PaymentMethod)}
+              options={METHOD_OPTIONS}
+            />
+          </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="form-label">
-                      Category *
-                    </label>
-                    <select
-                      value={entryCategory}
-                      onChange={(e) => setEntryCategory(e.target.value as PaymentCategory)}
-                      className="input-field"
-                    >
-                      {CATEGORY_OPTIONS.filter((c) => c.type === entryType).map((c) => (
-                        <option key={c.value} value={c.value}>
-                          {c.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+          {/* Enhanced Customer / Supplier Selector */}
+          <div>
+            <EnhancedCustomerSupplierSelect
+              selectedCustomerId={entryPartyId}
+              allowedType={entryType === 'credit' ? 'all' : 'supplier'}
+              label={entryType === 'credit' ? 'Customer / Party Name *' : 'Market Supplier / Payee Name *'}
+              showJobHistoryCard={false}
+              onSelectParty={(party, jobs) => {
+                if (party) {
+                  setEntryPartyId(party.id);
+                  setEntryPartyName(party.name);
+                  setPartyJobsList(jobs || []);
+                  if (jobs && jobs.length > 0) {
+                    toast.info(`Found ${jobs.length} repair jobs for ${party.name}`);
+                  }
+                } else {
+                  setEntryPartyId(null);
+                  setEntryPartyName('');
+                  setPartyJobsList([]);
+                  handleEntryTokenChange('');
+                }
+              }}
+              onSelectReferenceJob={(job) => {
+                if (job) {
+                  handleEntryTokenChange(job.token_number);
+                }
+              }}
+            />
+          </div>
 
-                  <div>
-                    <label className="form-label">
-                      Payment Account / Method *
-                    </label>
-                    <select
-                      value={entryMethod}
-                      onChange={(e) => setEntryMethod(e.target.value as PaymentMethod)}
-                      className="input-field"
-                    >
-                      {METHOD_OPTIONS.map((m) => (
-                        <option key={m.value} value={m.value}>
-                          {m.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
+          {/* Reference Token / Linked Repair Job Selector */}
+          <div className="bg-slate-50 dark:bg-slate-800/50 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center justify-between mb-2">
+              <label className="form-label mb-0">
+                Reference Repair Job / Token (Optional)
+              </label>
+              {partyJobsList.length > 0 && (
+                <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-[10px] font-bold rounded-full">
+                  {partyJobsList.length} Job{partyJobsList.length > 1 ? 's' : ''} on record
+                </span>
+              )}
+            </div>
 
-                {/* Enhanced Customer / Supplier Selector */}
-                <div>
-                  <EnhancedCustomerSupplierSelect
-                    selectedCustomerId={entryPartyId}
-                    allowedType={entryType === 'credit' ? 'all' : 'supplier'}
-                    label={entryType === 'credit' ? 'Customer / Party Name *' : 'Market Supplier / Payee Name *'}
-                    showJobHistoryCard={false}
-                    onSelectParty={(party, jobs) => {
-                      if (party) {
-                        setEntryPartyId(party.id);
-                        setEntryPartyName(party.name);
-                        setPartyJobsList(jobs || []);
-                        if (jobs && jobs.length > 0) {
-                          // If party has jobs and none selected yet, offer the first
-                          toast.info(`Found ${jobs.length} repair jobs for ${party.name}`);
-                        }
-                      } else {
-                        setEntryPartyId(null);
-                        setEntryPartyName('');
-                        setPartyJobsList([]);
-                        handleEntryTokenChange('');
-                      }
-                    }}
-                    onSelectReferenceJob={(job) => {
-                      if (job) {
-                        handleEntryTokenChange(job.token_number);
-                      }
-                    }}
-                  />
-                </div>
-
-                {/* Reference Token / Linked Repair Job Selector */}
-                <div className="bg-slate-50 dark:bg-slate-800/50 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="form-label">
-                      Reference Repair Job / Token (Optional)
-                    </label>
-                    {partyJobsList.length > 0 && (
-                      <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-[10px] font-bold rounded-full">
-                        {partyJobsList.length} Job{partyJobsList.length > 1 ? 's' : ''} on record
-                      </span>
-                    )}
-                  </div>
-
-                  {partyJobsList.length > 0 ? (
-                    <div className="space-y-2">
-                      <select
-                        value={entryTokenNumber}
-                        onChange={(e) => handleEntryTokenChange(e.target.value)}
-                        className="input-field font-medium text-xs"
-                      >
-                        <option value="">-- No Specific Job (General Ledger Entry) --</option>
-                        {partyJobsList.map((job) => (
-                          <option key={job.id} value={job.token_number}>
-                            {job.token_number} — {job.model || job.job_type} | Charges: {formatCurrency(job.charges)} ({job.payment_status.toUpperCase()})
-                          </option>
-                        ))}
-                      </select>
-
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] text-slate-500">Or enter custom token:</span>
-                        <input
-                          type="text"
-                          value={entryTokenNumber}
-                          onChange={(e) => handleEntryTokenChange(e.target.value)}
-                          placeholder="e.g. PTS-001"
-                          className="input-field text-xs py-1"
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <input
-                      type="text"
-                      value={entryTokenNumber}
-                      onChange={(e) => handleEntryTokenChange(e.target.value)}
-                      placeholder="e.g. PTS-001 or general reference"
-                      className="input-field text-xs"
-                    />
-                  )}
-                </div>
+            {partyJobsList.length > 0 ? (
+              <DropdownSelect
+                value={entryTokenNumber}
+                onChange={handleEntryTokenChange}
+                allowCustom
+                otherLabel="Enter Token Manually…"
+                placeholder="-- No Specific Job (General Ledger Entry) --"
+                options={partyJobsList.map((job) => ({
+                  value: job.token_number,
+                  label: `${job.token_number} — ${job.model || job.job_type} | ${formatCurrency(job.charges)} (${job.payment_status.toUpperCase()})`,
+                }))}
+              />
+            ) : (
+              <Input
+                type="text"
+                value={entryTokenNumber}
+                onChange={(e) => handleEntryTokenChange(e.target.value)}
+                placeholder="e.g. PTS-001 or general reference"
+              />
+            )}
+          </div>
 
                 {/* ── Repair-job payment calculation (original price / discount / net / balance) ── */}
                 {entryType === 'credit' && entryJob && (
@@ -1277,277 +1213,197 @@ export const PaymentModulePage: React.FC = () => {
                   </div>
                 )}
 
-                <div>
-                  <label className="form-label">
-                    Description / Purpose *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={entryDescription}
-                    onChange={(e) => setEntryDescription(e.target.value)}
-                    placeholder="e.g. Received full repair charges for Dell XPS laptop"
-                    className="input-field"
-                  />
-                </div>
+                <Input
+                  type="text"
+                  required
+                  label="Description / Purpose"
+                  value={entryDescription}
+                  onChange={(e) => setEntryDescription(e.target.value)}
+                  placeholder="e.g. Received full repair charges for Dell XPS laptop"
+                />
 
-                <div>
-                  <label className="form-label">
-                    Additional Notes
-                  </label>
-                  <input
-                    type="text"
-                    value={entryNotes}
-                    onChange={(e) => setEntryNotes(e.target.value)}
-                    placeholder="e.g. Paid via JazzCash TxID: 9812498"
-                    className="input-field"
-                  />
-                </div>
+                <Input
+                  type="text"
+                  label="Additional Notes"
+                  value={entryNotes}
+                  onChange={(e) => setEntryNotes(e.target.value)}
+                  placeholder="e.g. Paid via JazzCash TxID: 9812498"
+                />
 
                 <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-                  <button
-                    type="button"
-                    onClick={() => setIsSingleModalOpen(false)}
-                    className="btn-secondary"
-                  >
+                  <Button variant="secondary" onClick={() => setIsSingleModalOpen(false)}>
                     Cancel
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="submit"
                     disabled={isSubmitting}
-                    className="btn-primary"
+                    loading={isSubmitting}
+                    icon={<CheckCircle2 className="w-4 h-4" />}
                   >
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>Post Voucher</span>
-                  </button>
+                    Post Voucher
+                  </Button>
                 </div>
               </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      </Modal>
 
       {/* MODAL 2: Multi-Row Batch Entry */}
-      <AnimatePresence>
-        {isMultiModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-2xl max-w-5xl w-full space-y-5 max-h-[90vh] flex flex-col"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                <div className="flex items-center gap-2">
-                  <Receipt className="w-5 h-5 text-slate-600 dark:text-slate-300" />
-                  <div>
-                    <h3 className="font-bold text-base text-slate-900 dark:text-white font-heading">
-                      Multi-Row Batch Ledger Entry
-                    </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Quickly input multiple Credit & Debit transactions at once
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setIsMultiModalOpen(false)}
-                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Rows Form */}
-              <form onSubmit={handleMultiSubmit} className="flex-1 flex flex-col justify-between overflow-hidden">
-                <div className="overflow-y-auto flex-1 pr-1 space-y-3">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold uppercase">
-                        <th className="p-2 w-12">#</th>
-                        <th className="p-2 w-28">Flow</th>
-                        <th className="p-2 w-28">Date</th>
-                        <th className="p-2 w-32">Amount (PKR)</th>
-                        <th className="p-2 w-44">Category</th>
-                        <th className="p-2 w-32">Method</th>
-                        <th className="p-2 w-40">Party Name</th>
-                        <th className="p-2">Description</th>
-                        <th className="p-2 w-10 text-center"></th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {multiRows.map((row, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                          <td className="p-2 font-bold text-slate-400">{idx + 1}</td>
-
-                          {/* Flow Type */}
-                          <td className="p-2">
-                            <select
-                              value={row.type}
-                              onChange={(e) => updateMultiRow(idx, 'type', e.target.value as TransactionType)}
-                              className={`p-1.5 rounded-lg border text-xs font-bold outline-none ${
-                                row.type === 'credit'
-                                  ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700'
-                                  : 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-400 border-rose-300 dark:border-rose-700'
-                              }`}
-                            >
-                              <option value="credit">CREDIT (+)</option>
-                              <option value="debit">DEBIT (-)</option>
-                            </select>
-                          </td>
-
-                          {/* Date */}
-                          <td className="p-2">
-                            <input
-                              type="date"
-                              required
-                              value={row.date}
-                              onChange={(e) => updateMultiRow(idx, 'date', e.target.value)}
-                              className="w-full p-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg"
-                            />
-                          </td>
-
-                          {/* Amount */}
-                          <td className="p-2">
-                            <input
-                              type="number"
-                              required
-                              min={1}
-                              value={row.amount || ''}
-                              onChange={(e) => updateMultiRow(idx, 'amount', parseFloat(e.target.value) || 0)}
-                              placeholder="0"
-                              className="w-full p-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg font-bold"
-                            />
-                          </td>
-
-                          {/* Category */}
-                          <td className="p-2">
-                            <select
-                              value={row.category}
-                              onChange={(e) => updateMultiRow(idx, 'category', e.target.value as PaymentCategory)}
-                              className="w-full p-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg"
-                            >
-                              {CATEGORY_OPTIONS.filter((c) => c.type === row.type).map((c) => (
-                                <option key={c.value} value={c.value}>
-                                  {c.label}
-                                </option>
-                              ))}
-                            </select>
-                          </td>
-
-                          {/* Method */}
-                          <td className="p-2">
-                            <select
-                              value={row.payment_method}
-                              onChange={(e) => updateMultiRow(idx, 'payment_method', e.target.value as PaymentMethod)}
-                              className="w-full p-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg"
-                            >
-                              {METHOD_OPTIONS.map((m) => (
-                                <option key={m.value} value={m.value}>
-                                  {m.label}
-                                </option>
-                              ))}
-                            </select>
-                          </td>
-
-                          {/* Party Name */}
-                          <td className="p-2">
-                            <input
-                              type="text"
-                              list="saved-parties-datalist"
-                              value={row.party_name}
-                              onChange={(e) => updateMultiRow(idx, 'party_name', e.target.value)}
-                              placeholder="Select / Type Party"
-                              className="w-full p-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg"
-                            />
-                          </td>
-
-                          {/* Description */}
-                          <td className="p-2">
-                            <input
-                              type="text"
-                              required
-                              value={row.description}
-                              onChange={(e) => updateMultiRow(idx, 'description', e.target.value)}
-                              placeholder="Description"
-                              className="w-full p-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg"
-                            />
-                          </td>
-
-                          {/* Delete */}
-                          <td className="p-2 text-center">
-                            <button
-                              type="button"
-                              onClick={() => removeMultiRow(idx)}
-                              className="text-slate-400 hover:text-rose-500"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-
-                  <button
-                    type="button"
-                    onClick={addMultiRow}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-colors cursor-pointer mt-2"
+      <Modal
+        open={isMultiModalOpen}
+        onClose={() => setIsMultiModalOpen(false)}
+        title="Multi-Row Batch Ledger Entry"
+        subtitle="Quickly input multiple Credit & Debit transactions at once"
+        size="xl"
+      >
+        <form onSubmit={handleMultiSubmit} className="space-y-4">
+          <div className="space-y-3">
+            {multiRows.map((row, idx) => (
+              <div
+                key={idx}
+                className="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700/80 space-y-3"
+              >
+                <div className="flex items-center justify-between">
+                  <span
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
+                      row.type === 'credit'
+                        ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400'
+                        : 'bg-rose-100 dark:bg-rose-950/50 text-rose-700 dark:text-rose-400'
+                    }`}
                   >
-                    <PlusCircle className="w-3.5 h-3.5 text-slate-500" />
-                    <span>+ Add Another Entry Row</span>
-                  </button>
-                </div>
+                    Entry #{idx + 1} · {row.type === 'credit' ? 'CREDIT (+)' : 'DEBIT (-)'}
+                  </span>
 
-                {/* Footer and Summary */}
-                <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-800 mt-3">
-                  <div className="text-xs text-slate-500 space-x-3">
-                    <span>
-                      Total Credit:{' '}
-                      <strong className="text-emerald-600">
-                        {formatCurrency(multiCreditTotal)}
-                      </strong>
-                    </span>
-                    <span>
-                      Total Debit:{' '}
-                      <strong className="text-rose-600">
-                        {formatCurrency(multiDebitTotal)}
-                      </strong>
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
+                  {multiRows.length > 1 && (
                     <button
                       type="button"
-                      onClick={() => setIsMultiModalOpen(false)}
-                      className="btn-secondary"
+                      onClick={() => removeMultiRow(idx)}
+                      className="text-slate-400 hover:text-rose-600 p-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                      title="Remove Entry"
                     >
-                      Cancel
+                      <Trash2 className="w-4 h-4" />
                     </button>
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="btn-primary"
-                    >
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span>Post All Batch Entries</span>
-                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <DropdownSelect
+                    size="sm"
+                    label="Flow"
+                    value={row.type}
+                    onChange={(v) => updateMultiRow(idx, 'type', v as TransactionType)}
+                    options={[
+                      { value: 'credit', label: 'CREDIT (+) Income' },
+                      { value: 'debit', label: 'DEBIT (-) Expense' },
+                    ]}
+                  />
+
+                  <EnhancedDatePicker
+                    compact
+                    required
+                    label="Date"
+                    type="receive"
+                    value={row.date}
+                    onChange={(v) => updateMultiRow(idx, 'date', v)}
+                  />
+
+                  <Input
+                    size="sm"
+                    type="number"
+                    required
+                    min={1}
+                    label="Amount (PKR)"
+                    value={row.amount || ''}
+                    onChange={(e) => updateMultiRow(idx, 'amount', parseFloat(e.target.value) || 0)}
+                    placeholder="0"
+                    className="[&_input]:font-bold"
+                  />
+
+                  <DropdownSelect
+                    size="sm"
+                    label="Category"
+                    value={row.category}
+                    onChange={(v) => updateMultiRow(idx, 'category', v as PaymentCategory)}
+                    options={CATEGORY_OPTIONS.filter((c) => c.type === row.type)}
+                  />
+
+                  <DropdownSelect
+                    size="sm"
+                    label="Method"
+                    value={row.payment_method}
+                    onChange={(v) => updateMultiRow(idx, 'payment_method', v as PaymentMethod)}
+                    options={METHOD_OPTIONS}
+                  />
+
+                  <DropdownSelect
+                    size="sm"
+                    label="Party Name"
+                    value={row.party_name}
+                    onChange={(v) => updateMultiRow(idx, 'party_name', v)}
+                    allowCustom
+                    searchable
+                    placeholder="Select saved party…"
+                    options={allSavedParties.map((p) => ({
+                      value: p.name,
+                      label: `${p.party_type === 'supplier' ? '🏢 [Supplier]' : '👤 [Customer]'} ${p.name}`,
+                    }))}
+                  />
+
+                  <div className="sm:col-span-2 lg:col-span-3">
+                    <Input
+                      size="sm"
+                      type="text"
+                      required
+                      label="Description"
+                      value={row.description}
+                      onChange={(e) => updateMultiRow(idx, 'description', e.target.value)}
+                      placeholder="Description"
+                    />
                   </div>
                 </div>
-              </form>
-
-              {/* Datalist for autocomplete */}
-              <datalist id="saved-parties-datalist">
-                {allSavedParties.map((p) => (
-                  <option key={p.id} value={p.name}>
-                    {p.party_type === 'supplier' ? '🏢 [Supplier]' : '👤 [Customer]'} {p.name}
-                  </option>
-                ))}
-              </datalist>
-            </motion.div>
+              </div>
+            ))}
           </div>
-        )}
-      </AnimatePresence>
+
+          <Button
+            variant="secondary"
+            onClick={addMultiRow}
+            icon={<PlusCircle className="w-3.5 h-3.5 text-slate-500" />}
+          >
+            Add Another Entry Row
+          </Button>
+
+          {/* Footer and Summary */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+            <div className="text-xs text-slate-500 space-x-3">
+              <span>
+                Total Credit:{' '}
+                <strong className="text-emerald-600">
+                  {formatCurrency(multiCreditTotal)}
+                </strong>
+              </span>
+              <span>
+                Total Debit:{' '}
+                <strong className="text-rose-600">
+                  {formatCurrency(multiDebitTotal)}
+                </strong>
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button variant="secondary" onClick={() => setIsMultiModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                loading={isSubmitting}
+                icon={<CheckCircle2 className="w-4 h-4" />}
+              >
+                Post All Batch Entries
+              </Button>
+            </div>
+          </div>
+        </form>
+      </Modal>
     </motion.div>
   );
 };
