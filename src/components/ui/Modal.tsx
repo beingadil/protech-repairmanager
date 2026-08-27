@@ -60,8 +60,12 @@ export const Modal: React.FC<ModalProps> = ({
         onClick={dismissable ? onClose : undefined}
         aria-hidden="true"
       />
+      {/* Dialog — must stack ABOVE the overlay. The .overlay component class
+          carries z-50; a plain `relative` card would paint BELOW it (backdrop
+          dims the modal and steals its clicks). `z-50` ties with the overlay
+          and later DOM order wins, putting the dialog on top. */}
       <div
-        className={`modal-card relative w-full ${sizeClasses[size]} max-h-[90vh] flex flex-col`}
+        className={`modal-card relative z-50 w-full ${sizeClasses[size]} max-h-[90vh] flex flex-col`}
       >
         {title && (
           <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
