@@ -92,6 +92,13 @@ export const PrintPreviewPage: React.FC = () => {
     return () => document.documentElement.removeAttribute('data-paper');
   }, [paper]);
 
+  // Enumerate Windows printers once on mount. MUST stay above the early-return
+  // guard below: every hook must run on every render, or React throws
+  // "Rendered more hooks than during the previous render" (#310).
+  useEffect(() => {
+    listPrinters().then(setPrinters);
+  }, []);
+
   const invoiceData = useMemo(() => {
     if (!job) return null;
     return buildInvoiceData(job, settings, txList, docType, paper);
@@ -132,10 +139,6 @@ export const PrintPreviewPage: React.FC = () => {
   };
 
   // Persist the chosen printer per format so it is remembered across sessions.
-  useEffect(() => {
-    listPrinters().then(setPrinters);
-  }, []);
-
   const currentPrinter =
     getSavedPrinter(paper === 'a4' ? 'a4' : 'thermal') ??
     printers.find((p) => p.isDefault)?.name ??
