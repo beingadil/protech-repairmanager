@@ -1,6 +1,17 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Printer, Download, Receipt, FileText, BadgeCheck, AlertTriangle } from 'lucide-react';
+import {
+  ArrowLeft,
+  Printer,
+  Download,
+  Receipt,
+  FileText,
+  BadgeCheck,
+  AlertTriangle,
+  ZoomIn,
+  ZoomOut,
+  ScanLine
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { query } from '../../lib/db';
 import { Job } from '../../types/job';
@@ -16,11 +27,33 @@ import {
 import { buildInvoiceData, InvoiceDocType, InvoicePaper } from '../../lib/invoice';
 import { InvoiceDocument } from './InvoiceDocument';
 
-const PAPER_OPTIONS: { value: InvoicePaper; label: string; desc: string }[] = [
-  { value: 'a4', label: 'A4', desc: 'Official invoice' },
-  { value: '80', label: '80mm', desc: 'Thermal receipt' },
-  { value: '58', label: '58mm', desc: 'Narrow thermal' }
-];
+interface PaperMeta {
+  label: string;
+  desc: string;
+  sizeCaption: string;
+  defaultZoom: number;
+}
+
+const PAPER_OPTIONS: Record<InvoicePaper, PaperMeta> = {
+  a4: {
+    label: 'A4',
+    desc: 'Official invoice',
+    sizeCaption: 'A4 | 210 x 297 mm',
+    defaultZoom: 1
+  },
+  '80': {
+    label: '80mm',
+    desc: 'Thermal receipt',
+    sizeCaption: '80mm roll | ~72mm printable',
+    defaultZoom: 1.35
+  },
+  '58': {
+    label: '58mm',
+    desc: 'Narrow thermal',
+    sizeCaption: '58mm roll | ~54mm printable',
+    defaultZoom: 1.45
+  }
+};
 
 const DOC_OPTIONS: { value: InvoiceDocType; label: string; icon: React.ReactNode }[] = [
   { value: 'payment_receipt', label: 'Payment Receipt', icon: React.createElement(Receipt, { className: 'w-3.5 h-3.5' }) },
@@ -45,6 +78,10 @@ export const PrintPreviewPage: React.FC = () => {
   const [docType, setDocType] = useState<InvoiceDocType>(
     (searchParams.get('type') as InvoiceDocType) || 'payment_receipt'
   );
+  // Preview-only magnification. NEVER sent to the print engine.
+  const [zoom, setZoom] = useState<number>(() => PAPER_OPTIONS[paper as InvoicePaper].defaultZoom);
+  const [printing, setPrinting] = useState(false);
+  const [savingPdf, setSavingPdf] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -57,7 +94,7 @@ export const PrintPreviewPage: React.FC = () => {
       ).then((res) => {
         if (res.length > 0) {
           setJob(res[0]);
-          // Complimentary jobs default to the waiver document — never a fake payment receipt.
+          // Complimentary jobs default to the waiver document (never a payment receipt).
           if (res[0].payment_status === 'complimentary') {
             setDocType('waiver');
           }
@@ -66,7 +103,7 @@ export const PrintPreviewPage: React.FC = () => {
     }
   }, [id]);
 
-  // Load ledger history so the receipt shows real paid / balance amounts.
+  // Ledger history -> real paid / balance figures on the receipt.
   useEffect(() => {
     if (!job) return;
     query<FinancialTransaction>(
@@ -75,7 +112,7 @@ export const PrintPreviewPage: React.FC = () => {
     ).then(setTxList);
   }, [job]);
 
-  // Inject the correct @page rule + paper marker for the active template.
+  // Correct @page rule + paper marker for the active template.
   useEffect(() => {
     const styleId = 'print-page-size';
     let el = document.getElementById(styleId) as HTMLStyleElement | null;
@@ -88,14 +125,16 @@ export const PrintPreviewPage: React.FC = () => {
       paper === 'a4'
         ? '@page { size: A4 portrait; margin: 6mm; }'
         : `@page { size: ${paper}mm auto; margin: 0; }`;
-
     document.documentElement.setAttribute('data-paper', paper);
     return () => document.documentElement.removeAttribute('data-paper');
   }, [paper]);
 
-  // Enumerate Windows printers once on mount. MUST stay above the early-return
-  // guard below: every hook must run on every render, or React throws
-  // "Rendered more hooks than during the previous render" (#310).
+  // Snap preview zoom to a comfortable default whenever the paper changes.
+  useEffect(() => {
+    setZoom(PAPER_OPTIONS[paper].defaultZoom);
+  }, [paper]);
+
+  // Windows printers (MUST stay above the early-return guard - hooks order).
   useEffect(() => {
     listPrinters().then(setPrinters);
   }, []);
@@ -106,40 +145,44 @@ export const PrintPreviewPage: React.FC = () => {
   }, [job, settings, txList, docType, paper, invSettings]);
 
   if (!job || !invoiceData) {
-    return <div className="py-20 text-center text-slate-400">Loading print preview...</div>;
+    return (
+      <div className="max-w-3xl mx-auto py-24 text-center">
+        <div className="mx-auto w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
+        <p className="mt-4 text-sm font-medium text-slate-400">Preparing print preview...</p>
+      </div>
+    );
   }
 
   const handlePrint = async () => {
-    toast.info('Sending document to printer…');
+    setPrinting(true);
+    toast.info('Sending document to printer...');
     try {
       await printDocument(invoiceData);
-      // Native path resolves only on success (errors throw).
       if ((window as unknown as { prodata?: { print?: unknown } }).prodata?.print) {
         toast.success('Receipt sent to printer.');
       }
-      // Browser fallback path returns without toasts (window.print dialog shown).
     } catch (err) {
       toast.error(`Unable to print: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setPrinting(false);
     }
   };
 
   const handleDownloadPDF = async () => {
-    const baseName = `${job.token_number}_${docType === 'payment_receipt' ? 'Payment-Receipt' : docType === 'waiver' ? 'Complimentary-Waiver' : 'Repair-Receipt'}`;
+    const baseName = `${job.token_number}_${
+      docType === 'payment_receipt' ? 'Payment-Receipt' : docType === 'waiver' ? 'Complimentary-Waiver' : 'Repair-Ticket'
+    }`;
+    setSavingPdf(true);
     try {
       const savedPath = await saveDocumentPdf(invoiceData, `${baseName}.pdf`);
-      if (savedPath) {
-        toast.success(`PDF saved: ${savedPath}`);
-      } else if ((window as unknown as { prodata?: { print?: unknown } }).prodata?.print) {
-        // Cancelled by user — silent is correct.
-      } else {
-        toast.success('PDF downloaded successfully.');
-      }
+      if (savedPath) toast.success(`PDF saved: ${savedPath}`);
     } catch (err) {
       toast.error(`Unable to save PDF: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setSavingPdf(false);
     }
   };
 
-  // Persist the chosen printer per format so it is remembered across sessions.
   const currentPrinter =
     getSavedPrinter(paper === 'a4' ? 'a4' : 'thermal') ??
     printers.find((p) => p.isDefault)?.name ??
@@ -148,7 +191,7 @@ export const PrintPreviewPage: React.FC = () => {
   const handlePrinterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     if (!e.target.value) return;
     savePrinterPreference(paper === 'a4' ? 'a4' : 'thermal', e.target.value);
-    setPrinters((prev) => [...prev]); // refresh currentPrinter via render
+    setPrinters((prev) => [...prev]);
   };
 
   const changeDocType = (t: InvoiceDocType) => {
@@ -156,115 +199,209 @@ export const PrintPreviewPage: React.FC = () => {
     setSearchParams({ type: t }, { replace: true });
   };
 
+  const stepZoom = (dir: number) =>
+    setZoom((z) => Math.min(2.5, Math.max(0.6, Number((z + dir * 0.15).toFixed(2)))));
+
   const showComplimentaryHint = docType === 'payment_receipt' && job.payment_status === 'complimentary';
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      <div className="print-toolbar flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
+    <div className="max-w-5xl mx-auto">
+      {/* ---------- Action bar ---------- */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate(`/jobs/${job.id}`)}
-            className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+            className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+            title="Back to job"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-4 h-4" />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight font-heading">
-              Print / Invoice
-            </h1>
-            <p className="text-xs text-slate-500">
-              {job.token_number} — {job.customer_name}
+            <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Print &amp; Invoice</h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              <span className="font-mono font-semibold">{job.token_number}</span>
+              <span className="mx-1.5 opacity-40">/</span>
+              {job.customer_name}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={handleDownloadPDF}
-            className="inline-flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 transition-colors cursor-pointer"
-          >
-            <Download className="w-4 h-4 text-slate-500" />
-            <span>Save PDF</span>
-          </button>
+          <ButtonGhost onClick={handleDownloadPDF} busy={savingPdf} icon={<Download className="w-4 h-4" />} label="Save PDF" />
           <button
             onClick={handlePrint}
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold shadow-md transition-colors cursor-pointer"
+            disabled={printing}
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold shadow-sm transition-colors cursor-pointer"
           >
             <Printer className="w-4 h-4" />
-            <span>Print Now</span>
+            {printing ? 'Printing...' : 'Print Now'}
           </button>
         </div>
       </div>
 
-      <div className="print-toolbar">
-        <span className="muted-label block mb-2">Document Type</span>
-        <div className="flex flex-wrap items-center gap-2">
+      {/* ---------- Controls: document type + paper size ---------- */}
+      <div className="grid md:grid-cols-2 gap-4 mt-5">
+        <SegmentCard label="Document Type">
           {DOC_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => changeDocType(opt.value)}
-              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${docType === opt.value
-                ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-900 dark:border-slate-100 shadow-xs'
-                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-400'}`}
-            >
+            <SegButton key={opt.value} active={docType === opt.value} onClick={() => changeDocType(opt.value)}>
               {opt.icon}
               {opt.label}
-            </button>
+            </SegButton>
           ))}
-        </div>
-        {showComplimentaryHint && (
-          <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-semibold">
-            <AlertTriangle className="w-4 h-4" />
-            This job is COMPLIMENTARY (no payment required). Use the Complimentary document instead.
-          </div>
-        )}
+        </SegmentCard>
+        <SegmentCard label="Paper Size">
+          {(Object.keys(PAPER_OPTIONS) as InvoicePaper[]).map((key) => {
+            const meta = PAPER_OPTIONS[key];
+            return (
+              <SegButton key={key} active={paper === key} onClick={() => setPaper(key)} grow>
+                <span className="font-black">{meta.label}</span>
+                <span className="block text-[10px] font-medium normal-case opacity-70 -mt-0.5">{meta.desc}</span>
+              </SegButton>
+            );
+          })}
+        </SegmentCard>
       </div>
 
-      <div className="print-toolbar flex flex-wrap items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl">
-        {PAPER_OPTIONS.map((opt) => (
-          <button
-            key={opt.value}
-            onClick={() => setPaper(opt.value)}
-            className={`flex-1 min-w-[110px] py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${paper === opt.value
-              ? 'bg-white dark:bg-slate-900 text-blue-600 shadow-xs'
-              : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}
-          >
-            {opt.label}
-            <span className="block text-[10px] font-medium normal-case">{opt.desc}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Printer selection — real Windows printers, remembered per format. */}
-      {printers.length > 0 && (
-        <div className="print-toolbar flex flex-wrap items-center gap-3 px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl">
-          <label className="muted-label" htmlFor="printer-select">
-            {paper === 'a4' ? 'A4 Printer' : 'Thermal Printer'}
-          </label>
-          <select
-            id="printer-select"
-            value={currentPrinter}
-            onChange={handlePrinterChange}
-            className="input-field max-w-md text-xs py-1.5"
-          >
-            {printers.map((p) => (
-              <option key={p.name} value={p.name}>
-                {p.displayName}{p.isDefault ? ' (Windows Default)' : ''}
-              </option>
-            ))}
-          </select>
-          <span className="text-[10px] text-slate-400">
-            Saved automatically for this paper size
-          </span>
+      {showComplimentaryHint && (
+        <div className="mt-3 flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-semibold">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
+          This job is COMPLIMENTARY (no payment required). Use the Complimentary document instead.
         </div>
       )}
 
-      <div className="print-sheet flex justify-center bg-slate-200 dark:bg-slate-950 p-4 sm:p-8 rounded-2xl shadow-inner min-h-[420px]">
-        <div className={paper === 'a4' ? 'shadow-2xl' : 'shadow-md'}>
-          <InvoiceDocument data={invoiceData} />
+      {/* ---------- Printer ---------- */}
+      {printers.length > 0 && (
+        <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl">
+          <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">
+            {paper === 'a4' ? 'A4 Printer' : 'Thermal Printer'}
+          </span>
+          <select
+            value={currentPrinter}
+            onChange={handlePrinterChange}
+            className="input-field max-w-md text-xs py-1.5 flex-1 min-w-[220px]"
+          >
+            {printers.map((p) => (
+              <option key={p.name} value={p.name}>
+                {p.displayName}
+                {p.isDefault ? ' (Windows Default)' : ''}
+              </option>
+            ))}
+          </select>
+          <span className="text-[10px] text-slate-400 ml-auto">Remembered per paper size</span>
+        </div>
+      )}
+
+      {/* ---------- Paper stage ---------- */}
+      <div className="relative mt-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 overflow-hidden">
+        {/* size + printer chips */}
+        <div className="absolute top-3 left-3 z-10 flex flex-wrap items-center gap-2 pointer-events-none">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur border border-slate-200 dark:border-slate-700 text-[10px] font-bold text-slate-600 dark:text-slate-300 shadow-xs">
+            <ScanLine className="w-3 h-3" />
+            {PAPER_OPTIONS[paper].sizeCaption}
+          </span>
+          {currentPrinter && (
+            <span className="hidden sm:inline-flex px-2.5 py-1 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur border border-slate-200 dark:border-slate-700 text-[10px] font-semibold text-slate-500 dark:text-slate-400 shadow-xs max-w-[260px] truncate">
+              {currentPrinter}
+            </span>
+          )}
+        </div>
+
+        {/* scrollable sheet area */}
+        <div className="max-h-[68vh] overflow-auto p-6 sm:p-10 flex justify-center">
+          <div
+            className="bg-white rounded-[3px] ring-1 ring-black/10 shadow-2xl w-fit"
+            style={{ zoom }}
+          >
+            <InvoiceDocument data={invoiceData} />
+          </div>
+        </div>
+
+        {/* floating zoom pill */}
+        <div className="absolute bottom-3 right-3 z-10 inline-flex items-center gap-1 rounded-full bg-white/95 dark:bg-slate-900/95 backdrop-blur border border-slate-200 dark:border-slate-700 shadow-lg px-1.5 py-1">
+          <ZoomBtn onClick={() => stepZoom(-1)}><ZoomOut className="w-3.5 h-3.5" /></ZoomBtn>
+          <span className="px-1.5 text-[11px] font-bold tabular-nums text-slate-600 dark:text-slate-300 min-w-[44px] text-center">
+            {Math.round(zoom * 100)}%
+          </span>
+          <ZoomBtn onClick={() => stepZoom(1)}><ZoomIn className="w-3.5 h-3.5" /></ZoomBtn>
+          <span className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-0.5" />
+          <ZoomBtn onClick={() => setZoom(1)}>
+            <span className="text-[11px] font-bold px-0.5">1:1</span>
+          </ZoomBtn>
         </div>
       </div>
     </div>
   );
 };
+
+/* ---------------- small presentational helpers ---------------- */
+
+function SegmentCard({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3">
+      <span className="block text-[11px] font-black uppercase tracking-wider text-slate-400 mb-2">{label}</span>
+      <div className="flex items-stretch gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">{children}</div>
+    </div>
+  );
+}
+
+function SegButton({
+  active,
+  onClick,
+  children,
+  grow = false
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+  grow?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex ${grow ? 'flex-1' : ''} items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs transition-all cursor-pointer ${
+        active
+          ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
+          : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function ButtonGhost({
+  onClick,
+  busy,
+  icon,
+  label
+}: {
+  onClick: () => void;
+  busy: boolean;
+  icon: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={busy}
+      className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
+    >
+      {icon}
+      {busy ? 'Saving...' : label}
+    </button>
+  );
+}
+
+function ZoomBtn({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-7 h-7 inline-flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+    >
+      {children}
+    </button>
+  );
+}
 
 export default PrintPreviewPage;
