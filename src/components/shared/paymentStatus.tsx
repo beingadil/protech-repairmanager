@@ -20,6 +20,8 @@ export interface PaymentStatusMeta {
   statusLabel: string;
   /** Secondary description, e.g. No payment required */
   description: string;
+  /** Optional extra line for partial payments, e.g. "Rs 1,500 received of Rs 3,000 net" */
+  subLine?: string;
   Icon: React.ComponentType<{ className?: string }>;
   completed: boolean;
   /** Filled node styling for the lifecycle timeline */
@@ -32,7 +34,43 @@ export interface PaymentStatusMeta {
   descCls: string;
 }
 
-export function getPaymentStatusMeta(status: PaymentStatus, charges = 0): PaymentStatusMeta {
+export interface PaymentBalance {
+  /** Total actually received in credits for this job (>= 0). */
+  paid: number;
+  /** Charges minus discount minus paid; >= 0. */
+  remaining: number;
+}
+
+/**
+ * Derives the visible payment presentation for a repair job.
+ *
+ * Existing payment statuses (see src/types/job.ts):
+ *   - 'complimentary' — payment waived, NO cashbook / financial transaction
+ *   - 'paid'          — payment received in full
+ *   - 'due'           — payment outstanding (nothing OR part received)
+ *
+ * When `balance` is supplied and the job is 'due' with money received but a
+ * remainder left, the status renders as PARTIAL: a Rs 3,000 bill with Rs 1,500
+ * received shows "Rs 1,500 remaining" and only flips to PAID once the rest
+ * is paid. Overpaid jobs clamp to PAID (remaining floors at 0).
+ */
+export function getPaymentStatusMeta(status: PaymentStatus, charges = 0, balance?: PaymentBalance): PaymentStatusMeta {
+  if (status === 'due' && balance && balance.paid > 0 && balance.remaining > 0) {
+    return {
+      badgeLabel: 'PARTIAL',
+      statusLabel: 'Partially Paid',
+      description: `${formatCurrency(balance.remaining)} remaining`,
+      subLine: `${formatCurrency(balance.paid)} received of ${formatCurrency(balance.paid + balance.remaining)} net`,
+      Icon: Banknote,
+      completed: false,
+      nodeCls: 'bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700/60 ring-4 ring-amber-500/10',
+      cardCls: 'border-amber-300 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/30',
+      iconBoxCls: 'bg-amber-500 text-white',
+      titleCls: 'text-amber-700 dark:text-amber-300',
+      descCls: 'text-amber-600 dark:text-amber-400'
+    };
+  }
+
   switch (status) {
     case 'complimentary':
       return {
@@ -83,6 +121,8 @@ export function getPaymentStatusMeta(status: PaymentStatus, charges = 0): Paymen
 interface PaymentStatusCardProps {
   status: PaymentStatus;
   charges?: number;
+  /** Optional paid/remaining breakdown; enables the PARTIAL presentation. */
+  balance?: PaymentBalance;
 }
 
 /**
@@ -90,9 +130,11 @@ interface PaymentStatusCardProps {
  * Communicates the state clearly, e.g.:
  *   ✓ COMPLIMENTARY
  *     No payment required
+ *   ⏳ PARTIAL
+ *     Rs 1,500 remaining · Rs 1,500 received of Rs 3,000 net
  */
-export const PaymentStatusCard: React.FC<PaymentStatusCardProps> = ({ status, charges = 0 }) => {
-  const meta = getPaymentStatusMeta(status, charges);
+export const PaymentStatusCard: React.FC<PaymentStatusCardProps> = ({ status, charges = 0, balance }) => {
+  const meta = getPaymentStatusMeta(status, charges, balance);
   const Icon = meta.Icon;
   const isDone = meta.completed;
 
@@ -114,6 +156,11 @@ export const PaymentStatusCard: React.FC<PaymentStatusCardProps> = ({ status, ch
           <p className={`text-[11px] font-semibold leading-tight mt-0.5 ${meta.descCls}`}>
             {meta.description}
           </p>
+          {meta.subLine && (
+            <p className="text-[10px] font-medium leading-tight mt-0.5 text-slate-500 dark:text-slate-400">
+              {meta.subLine}
+            </p>
+          )}
         </div>
       </div>
     </div>

@@ -12,12 +12,14 @@ import {
 } from 'lucide-react';
 import { Job } from '../../types/job';
 import { formatDate, isOverdue } from '../../lib/utils';
-import { getPaymentStatusMeta } from './paymentStatus';
+import { getPaymentStatusMeta, PaymentBalance } from './paymentStatus';
 
 interface JobProgressTrackerProps {
   job: Job;
   onToggleDelivery?: () => void;
   onOpenNotify?: () => void;
+  /** Paid/remaining breakdown; when supplied, a part-paid job renders as PARTIAL. */
+  paymentBalance?: PaymentBalance;
 }
 
 interface TimelineStep {
@@ -37,7 +39,8 @@ interface TimelineStep {
 export const JobProgressTracker: React.FC<JobProgressTrackerProps> = ({
   job,
   onToggleDelivery,
-  onOpenNotify
+  onOpenNotify,
+  paymentBalance
 }) => {
   const isDelivered = job.deliver_status === 'delivered';
   const overdue = isOverdue(job.return_date, job.deliver_status);
@@ -94,7 +97,7 @@ export const JobProgressTracker: React.FC<JobProgressTrackerProps> = ({
   // Payment stage is data-driven from the actual job payment status.
   // It ALWAYS appears as the 5th (final) timeline stage — only its state changes.
   // Existing statuses: 'complimentary' | 'paid' | 'due'
-  const paymentMeta = getPaymentStatusMeta(job.payment_status, job.charges);
+  const paymentMeta = getPaymentStatusMeta(job.payment_status, job.charges, paymentBalance);
   const paymentCompleted = paymentMeta.completed;
 
   steps.push({

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import {
@@ -41,6 +41,7 @@ export const JobDetailPage: React.FC = () => {
   const { settings } = useSettingsStore();
 
   const [job, setJob] = useState<Job | null>(null);
+  const [paidAmount, setPaidAmount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
   const [showNotifyModal, setShowNotifyModal] = useState(false);
   const [notifyTemplate, setNotifyTemplate] = useState<'ready' | 'update' | 'payment_reminder'>('ready');
@@ -66,6 +67,14 @@ export const JobDetailPage: React.FC = () => {
         return;
       }
       setJob(res[0]);
+
+      // Sum of cashbook credits received for this job (indexed on
+      // token_number+type) — powers the PARTIAL "remaining balance" display.
+      const paidRows = await query<{ c: number }>(
+        "SELECT COALESCE(SUM(amount), 0) as c FROM financial_transactions WHERE type = 'credit' AND token_number = ?",
+        [res[0].token_number]
+      );
+      setPaidAmount(paidRows.length > 0 ? Number(paidRows[0].c) || 0 : 0);
     } catch (e) {
       console.error('Failed to load job details:', e);
       toast.error('Failed to load repair record.');
@@ -84,6 +93,17 @@ export const JobDetailPage: React.FC = () => {
     toast.success(`Delivery status updated to ${newStatus.toUpperCase()}`);
     loadJob(job.id);
   };
+
+  // Derived payment balance: net = charges - discount; remaining floors at 0
+  // so overpaid jobs clamp to PAID (never a negative remainder).
+  const paymentBalance = useMemo(() => {
+    if (!job) return undefined;
+    const charges = Math.max(0, Number(job.charges) || 0);
+    const discount = Math.max(0, Number((job as Job & { discount?: number }).discount) || 0);
+    const net = Math.max(0, charges - discount);
+    const remaining = Math.max(0, net - paidAmount);
+    return { paid: paidAmount, remaining };
+  }, [job, paidAmount]);
 
   const handleDeleteJob = async () => {
     if (!job) return;
@@ -211,13 +231,14 @@ export const JobDetailPage: React.FC = () => {
             job={job}
             onToggleDelivery={handleToggleDelivery}
             onOpenNotify={() => setShowNotifyModal(true)}
+            paymentBalance={paymentBalance}
           />
 
           {/* Status Bar */}
           <div className="card-container flex flex-wrap items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-4">
-              {/* Prominent payment status card — e.g. COMPLIMENTARY / No payment required */}
-              <PaymentStatusCard status={job.payment_status} charges={job.charges} />
+              {/* Prominent payment status card — PARTIAL shows remaining balance */}
+              <PaymentStatusCard status={job.payment_status} charges={job.charges} balance={paymentBalance} />
 
               <div className="h-8 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block"></div>
 
@@ -440,6 +461,11 @@ export const JobDetailPage: React.FC = () => {
           <div>
             <span className="text-[9px] uppercase font-bold text-slate-500 block">Payment Status</span>
             <span className="font-black text-slate-900 uppercase text-[11px]">{job.payment_status}</span>
+            {job.payment_status === 'due' && paymentBalance && paymentBalance.paid > 0 && paymentBalance.remaining > 0 && (
+              <span className="block font-bold text-amber-700 text-[10px] leading-tight">
+                {formatCurrency(paymentBalance.remaining)} remaining ({formatCurrency(paymentBalance.paid)} received)
+              </span>
+            )}
           </div>
           <div>
             <span className="text-[9px] uppercase font-bold text-slate-500 block">Delivery Status</span>

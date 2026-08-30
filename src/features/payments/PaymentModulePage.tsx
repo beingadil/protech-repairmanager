@@ -471,10 +471,21 @@ export const PaymentModulePage: React.FC = () => {
           ]
         });
 
-        // Mark job as paid if credit
+        // Derive payment status from the ACTUAL balance after all inserts:
+        // status is 'paid' only when credits cover charges minus discount.
         if (row.type === 'credit' && t) {
           ops.push({
-            sql: "UPDATE jobs SET payment_status = 'paid', updated_at = datetime('now') WHERE token_number = ? AND deleted_at IS NULL",
+            sql: `UPDATE jobs SET
+                    payment_status = CASE
+                      WHEN COALESCE(discount, 0) >= charges THEN 'paid'
+                      WHEN COALESCE((
+                            SELECT SUM(amount) FROM financial_transactions
+                            WHERE type = 'credit' AND token_number = jobs.token_number
+                          ), 0) + COALESCE(discount, 0) >= charges THEN 'paid'
+                      ELSE 'due'
+                    END,
+                    updated_at = datetime('now')
+                  WHERE token_number = ? AND deleted_at IS NULL`,
             params: [t]
           });
         }

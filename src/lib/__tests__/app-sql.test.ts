@@ -39,6 +39,7 @@ function makeDb() {
       receive_date TEXT DEFAULT '',
       return_date TEXT DEFAULT '',
       charges REAL DEFAULT 0,
+      discount REAL DEFAULT 0,
       has_charger INTEGER DEFAULT 1,
       payment_status TEXT DEFAULT 'due',
       deliver_status TEXT DEFAULT 'pending',
@@ -230,5 +231,93 @@ describe('App SQL — strict better-sqlite3 compatibility', () => {
     }
     // Must see PTS-5000, not be limited by any threshold
     expect(maxNum).toBe(5000);
+  });
+
+  it('partial payment: 3000 bill, 1500 credit → stays DUE with 1500 remaining; second 1500 → PAID', () => {
+    const db = makeDb();
+    db.prepare(
+      `INSERT INTO customers (name, mobile, address, party_type, created_at, updated_at) VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))`
+    ).run('Ali', '0300', '', 'customer');
+    // Rs 3,000 job (the user's exact scenario)
+    db.prepare(
+      `INSERT INTO jobs (token_number, customer_id, job_type, charges, payment_status, deliver_status, created_at, updated_at)
+       VALUES ('PTS-901', 1, 'laptop', 3000, 'due', 'pending', datetime('now'), datetime('now'))`
+    ).run();
+
+    const insertCredit = db.prepare(
+      `INSERT INTO financial_transactions (date, type, amount, category, payment_method, customer_name, token_number, description, created_at, updated_at)
+       VALUES (date('now'), 'credit', ?, 'repair_income', 'cash', 'Ali', 'PTS-901', ?, datetime('now'), datetime('now'))`
+    );
+    // Balance-derived status UPDATE (the batch-form SQL)
+    const deriveStatus = db.prepare(
+      `UPDATE jobs SET
+         payment_status = CASE
+           WHEN COALESCE(discount, 0) >= charges THEN 'paid'
+           WHEN COALESCE((SELECT SUM(amount) FROM financial_transactions WHERE type = 'credit' AND token_number = jobs.token_number), 0) + COALESCE(discount, 0) >= charges THEN 'paid'
+           ELSE 'due'
+         END,
+         updated_at = datetime('now')
+       WHERE token_number = ? AND deleted_at IS NULL`
+    );
+
+    // First payment: Rs 1,500 of Rs 3,000 → still DUE, Rs 1,500 remaining
+    insertCredit.run(1500, 'Partial repair payment');
+    deriveStatus.run('PTS-901');
+
+    let job: any = db.prepare(`SELECT payment_status, charges, COALESCE(discount, 0) as discount FROM jobs WHERE token_number = 'PTS-901'`).get();
+    let paid = (db.prepare(
+      `SELECT COALESCE(SUM(amount), 0) as c FROM financial_transactions WHERE type = 'credit' AND token_number = ?`
+    ).get('PTS-901') as any).c;
+    let remaining = Math.max(0, job.charges - job.discount - paid);
+    expect(job.payment_status).toBe('due');
+    expect(paid).toBe(1500);
+    expect(remaining).toBe(1500);
+
+    // Second payment: the remaining Rs 1,500 → flips to PAID
+    insertCredit.run(1500, 'Final repair payment');
+    deriveStatus.run('PTS-901');
+
+    job = db.prepare(`SELECT payment_status FROM jobs WHERE token_number = 'PTS-901'`).get() as any;
+    paid = (db.prepare(
+      `SELECT COALESCE(SUM(amount), 0) as c FROM financial_transactions WHERE type = 'credit' AND token_number = ?`
+    ).get('PTS-901') as any).c;
+    remaining = Math.max(0, 3000 - 0 - paid);
+    expect(job.payment_status).toBe('paid');
+    expect(paid).toBe(3000);
+    expect(remaining).toBe(0);
+  });
+
+  it('partial payment with discount: discount covered by credits → PAID, remaining clamps at 0', () => {
+    const db = makeDb();
+    db.prepare(
+      `INSERT INTO customers (name, mobile, address, party_type, created_at, updated_at) VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))`
+    ).run('Sara', '0301', '', 'customer');
+    db.prepare(
+      `INSERT INTO jobs (token_number, customer_id, job_type, charges, discount, payment_status, deliver_status, created_at, updated_at)
+       VALUES ('PTS-902', 1, 'laptop', 3000, 500, 'due', 'pending', datetime('now'), datetime('now'))`
+    ).run();
+    // Rs 2,500 net; customer pays Rs 2,500 → paid (discount honoured)
+    db.prepare(
+      `INSERT INTO financial_transactions (date, type, amount, category, payment_method, customer_name, token_number, description, created_at, updated_at)
+       VALUES (date('now'), 'credit', 2500, 'repair_income', 'cash', 'Sara', 'PTS-902', 'Net payment after discount', datetime('now'), datetime('now'))`
+    ).run();
+
+    db.prepare(
+      `UPDATE jobs SET
+         payment_status = CASE
+           WHEN COALESCE(discount, 0) >= charges THEN 'paid'
+           WHEN COALESCE((SELECT SUM(amount) FROM financial_transactions WHERE type = 'credit' AND token_number = jobs.token_number), 0) + COALESCE(discount, 0) >= charges THEN 'paid'
+           ELSE 'due'
+         END,
+         updated_at = datetime('now')
+       WHERE token_number = 'PTS-902' AND deleted_at IS NULL`
+    ).run();
+
+    const job: any = db.prepare(`SELECT payment_status, charges, COALESCE(discount, 0) as discount FROM jobs WHERE token_number = 'PTS-902'`).get();
+    const paid = (db.prepare(
+      `SELECT COALESCE(SUM(amount), 0) as c FROM financial_transactions WHERE type = 'credit' AND token_number = ?`
+    ).get('PTS-902') as any).c;
+    expect(job.payment_status).toBe('paid');
+    expect(Math.max(0, job.charges - job.discount - paid)).toBe(0);
   });
 });

@@ -48,7 +48,11 @@ export const JobListPage: React.FC = () => {
     setIsLoading(true);
     try {
       let sql = `
-        SELECT j.*, c.name as customer_name, c.mobile as customer_mobile, c.address as customer_address
+        SELECT j.*, c.name as customer_name, c.mobile as customer_mobile, c.address as customer_address,
+          COALESCE((
+            SELECT SUM(ft.amount) FROM financial_transactions ft
+            WHERE ft.type = 'credit' AND ft.token_number = j.token_number
+          ), 0) as paid_amount
         FROM jobs j
         JOIN customers c ON j.customer_id = c.id
         WHERE j.deleted_at IS NULL
@@ -56,8 +60,13 @@ export const JobListPage: React.FC = () => {
       const params: any[] = [];
 
       if (paymentFilter !== 'all') {
-        sql += ' AND j.payment_status = ?';
-        params.push(paymentFilter);
+        if (paymentFilter === 'partial') {
+          // Part-paid: 'due' status but cashbook credits received against it
+          sql += ` AND j.payment_status = 'due' AND COALESCE((SELECT SUM(ft.amount) FROM financial_transactions ft WHERE ft.type = 'credit' AND ft.token_number = j.token_number), 0) > 0 AND COALESCE((SELECT SUM(ft.amount) FROM financial_transactions ft WHERE ft.type = 'credit' AND ft.token_number = j.token_number), 0) + COALESCE(j.discount, 0) < j.charges`;
+        } else {
+          sql += ' AND j.payment_status = ?';
+          params.push(paymentFilter);
+        }
       }
       if (deliverFilter !== 'all') {
         sql += ' AND j.deliver_status = ?';
@@ -211,6 +220,7 @@ export const JobListPage: React.FC = () => {
             >
               <option value="all">Payment: All</option>
               <option value="due">Payment: DUE Only</option>
+              <option value="partial">Payment: PARTIAL (Part Paid)</option>
               <option value="paid">Payment: PAID Only</option>
               <option value="complimentary">Payment: COMPLIMENTARY</option>
             </select>
@@ -357,7 +367,7 @@ export const JobListPage: React.FC = () => {
                         {formatCurrency(job.charges)}
                       </td>
 
-                      {/* Payment Status — inline dropdown */}
+                      {/* Payment Status — inline dropdown + remaining balance hint */}
                       <td className="py-3.5 px-4">
                         <select
                           value={job.payment_status}
@@ -369,6 +379,20 @@ export const JobListPage: React.FC = () => {
                           <option value="paid">✅ Paid</option>
                           <option value="complimentary">💜 No Payment</option>
                         </select>
+                        {(() => {
+                          const paid = Number((job as Job & { paid_amount?: number }).paid_amount) || 0;
+                          const charges = Math.max(0, Number(job.charges) || 0);
+                          const discount = Math.max(0, Number((job as Job & { discount?: number }).discount) || 0);
+                          const remaining = Math.max(0, charges - discount - paid);
+                          if (job.payment_status === 'due' && paid > 0 && remaining > 0) {
+                            return (
+                              <span className="block text-[10px] font-bold text-amber-600 dark:text-amber-400 mt-1">
+                                {formatCurrency(remaining)} remaining
+                              </span>
+                            );
+                          }
+                          return null;
+                        })()}
                       </td>
 
                       {/* Delivery Status with inline dropdown */}
