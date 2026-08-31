@@ -104,12 +104,34 @@ export const PrintPreviewPage: React.FC = () => {
   }, [id]);
 
   // Ledger history -> real paid / balance figures on the receipt.
+  // Uses voucher-based payments (new system) with legacy fallback.
   useEffect(() => {
     if (!job) return;
-    query<FinancialTransaction>(
-      `SELECT * FROM financial_transactions WHERE token_number = ? ORDER BY date ASC, id ASC`,
-      [job.token_number]
-    ).then(setTxList);
+    (async () => {
+      // Try voucher-based first
+      const voucherTxs = await query<FinancialTransaction>(
+        `SELECT ft.* FROM financial_transactions ft
+         WHERE ft.token_number = ?
+           AND ft.id IN (
+             SELECT ft2.id FROM financial_transactions ft2
+             INNER JOIN voucher_lines vl ON vl.reference_token = ft2.token_number
+             INNER JOIN vouchers v ON v.id = vl.voucher_id AND v.type = 'receipt'
+             WHERE ft2.token_number = ?
+           )
+         ORDER BY ft.date ASC, ft.id ASC`,
+        [job.token_number, job.token_number]
+      );
+      if (voucherTxs.length > 0) {
+        setTxList(voucherTxs);
+      } else {
+        // Legacy fallback for pre-voucher data
+        const legacyTxs = await query<FinancialTransaction>(
+          `SELECT * FROM financial_transactions WHERE token_number = ? ORDER BY date ASC, id ASC`,
+          [job.token_number]
+        );
+        setTxList(legacyTxs);
+      }
+    })();
   }, [job]);
 
   // Correct @page rule + paper marker for the active template.

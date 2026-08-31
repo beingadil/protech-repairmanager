@@ -51,6 +51,7 @@ export const AnalyticsPage: React.FC = () => {
     setIsLoading(true);
     try {
       // 1. Overall financial summary
+      // Revenue = voucher credit lines to income accounts (single source of truth)
       const sumRes = await query<{
         total_revenue: number;
         total_jobs: number;
@@ -59,7 +60,9 @@ export const AnalyticsPage: React.FC = () => {
         pc_jobs: number;
       }>(`
         SELECT 
-          SUM(CASE WHEN payment_status = 'paid' AND deleted_at IS NULL THEN charges ELSE 0 END) as total_revenue,
+          (SELECT COALESCE(SUM(vl.credit), 0) FROM voucher_lines vl
+           JOIN accounts a ON a.id = vl.account_id
+           WHERE a.type = 'income') as total_revenue,
           COUNT(*) as total_jobs,
           AVG(CASE WHEN charges > 0 THEN charges ELSE NULL END) as avg_charge,
           SUM(CASE WHEN job_type = 'laptop' AND deleted_at IS NULL THEN 1 ELSE 0 END) as laptop_jobs,
@@ -108,28 +111,18 @@ export const AnalyticsPage: React.FC = () => {
         const monthName = d.toLocaleDateString('en-US', { month: 'short' });
 
         try {
-          const mJobRes = await query<{ m_rev: number }>(`
-            SELECT SUM(charges) as m_rev 
-            FROM jobs 
-            WHERE payment_status = 'paid' 
-              AND receive_date LIKE ? 
-              AND deleted_at IS NULL
+          // Voucher-based income: single source of truth (no double-counting)
+          const mRevRes = await query<{ rev: number }>(`
+            SELECT COALESCE(SUM(vl.credit), 0) AS rev
+            FROM voucher_lines vl
+            JOIN accounts a ON a.id = vl.account_id
+            JOIN vouchers v ON v.id = vl.voucher_id
+            WHERE a.type = 'income' AND v.date LIKE ?
           `, [`${yearMonth}%`]);
-
-          const mFinRes = await query<{ f_rev: number }>(`
-            SELECT SUM(amount) as f_rev 
-            FROM financial_transactions 
-            WHERE type = 'credit' 
-              AND date LIKE ?
-          `, [`${yearMonth}%`]);
-
-          const jobRev = mJobRes[0]?.m_rev || 0;
-          const finRev = mFinRes[0]?.f_rev || 0;
-          const rev = Math.max(jobRev, finRev);
 
           monthsList.push({
             month: monthName,
-            revenue: rev
+            revenue: mRevRes[0]?.rev || 0
           });
         } catch (e) {
           monthsList.push({ month: monthName, revenue: 0 });

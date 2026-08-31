@@ -24,8 +24,7 @@ const NotificationsPage = lazy(() => import('./features/notifications/Notificati
 const BackupPage = lazy(() => import('./features/backup/BackupPage').then(m => ({ default: m.BackupPage })));
 const SettingsPage = lazy(() => import('./features/settings/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const InventoryPage = lazy(() => import('./features/inventory/InventoryPage').then(m => ({ default: m.InventoryPage })));
-const PaymentModulePage = lazy(() => import('./features/payments/PaymentModulePage').then(m => ({ default: m.PaymentModulePage })));
-const GeneralLedgerPage = lazy(() => import('./features/ledger/GeneralLedgerPage').then(m => ({ default: m.GeneralLedgerPage })));
+const PaymentsHub = lazy(() => import('./features/payments/PaymentsHub').then(m => ({ default: m.PaymentModulePage })));
 
 /** Lightweight loading indicator while a chunk downloads. */
 function PageLoader() {
@@ -64,8 +63,8 @@ export const router = createHashRouter([
       { path: 'jobs/:id', element: <LazyPage><JobDetailPage /></LazyPage> },
       { path: 'jobs/:id/edit', element: <LazyPage><EditJobPage /></LazyPage> },
       { path: 'jobs/:id/print', element: <LazyPage><PrintPreviewPage /></LazyPage> },
-      { path: 'payments', element: <LazyPage><PaymentModulePage /></LazyPage> },
-      { path: 'ledger', element: <LazyPage><GeneralLedgerPage /></LazyPage> },
+      { path: 'payments', element: <LazyPage><PaymentsHub /></LazyPage> },
+      { path: 'ledger', element: <LazyPage><PaymentsHub /></LazyPage> },
       { path: 'inventory', element: <LazyPage><InventoryPage /></LazyPage> },
       { path: 'customers', element: <LazyPage><CustomersPage /></LazyPage> },
       { path: 'analytics', element: <LazyPage><AnalyticsPage /></LazyPage> },

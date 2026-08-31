@@ -217,6 +217,46 @@ export async function insertJobWithRetry(
   throw new Error('Failed to generate unique token after multiple attempts');
 }
 
+/**
+ * Generic collision-safe document-number generator backed by a settings
+ * counter (same proven pattern as getNextPTSToken). Used for VCH-xxxxxx
+ * vouchers and INV-xxxxxx invoices.
+ */
+export async function getNextDocumentNumber(
+  counterKey: 'voucher_counter' | 'invoice_counter',
+  prefix: 'VCH' | 'INV',
+  pad = 6
+): Promise<string> {
+  try {
+    await execute('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)', [counterKey, '0']);
+
+    // Reconcile against restored data so the counter never lags behind
+    // existing document numbers (backfills use id-derived numbers).
+    const table = counterKey === 'voucher_counter' ? 'vouchers' : 'invoices';
+    const column = counterKey === 'voucher_counter' ? 'voucher_no' : 'invoice_no';
+    await execute(
+      `UPDATE settings SET value = CAST(
+         (SELECT COALESCE(MAX(CAST(SUBSTR(${column}, INSTR(${column}, '-') + 1) AS INTEGER)), 0) FROM ${table})
+         AS TEXT)
+       WHERE key = ?
+         AND (CAST(value AS INTEGER) = 0
+              OR CAST(value AS INTEGER) <
+                (SELECT COALESCE(MAX(CAST(SUBSTR(${column}, INSTR(${column}, '-') + 1) AS INTEGER)), 0) FROM ${table}))`,
+      [counterKey]
+    );
+
+    const rows = await query<{ value: string }>('SELECT value FROM settings WHERE key = ?', [counterKey]);
+    const current = rows.length > 0 ? parseInt(rows[0].value, 10) : 0;
+    const nextNum = (isNaN(current) ? 0 : current) + 1;
+    await execute('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', [counterKey, String(nextNum)]);
+
+    return `${prefix}-${nextNum.toString().padStart(pad, '0')}`;
+  } catch (err) {
+    console.error(`Failed calculating next ${prefix} number:`, err);
+    return `${prefix}-${Date.now().toString().slice(-6)}`;
+  }
+}
+
 export async function exportDatabaseBinary(): Promise<Uint8Array> {
   await ensureDbReady();
   return bridge().exportBinary();

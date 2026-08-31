@@ -29,6 +29,7 @@ import { useSettingsStore } from '../../store/settings';
 import { EnhancedCustomerSupplierSelect } from '../../components/shared/EnhancedCustomerSupplierSelect';
 import { EnhancedDatePicker } from '../../components/common/EnhancedDatePicker';
 import { query, execute, getNextPTSToken, insertJobWithRetry } from '../../lib/db';
+import { postVoucher } from '../../lib/finance';
 import { JobType, PaymentStatus, DeliverStatus } from '../../types/job';
 import { TokenDisplay } from '../../components/shared/TokenDisplay';
 import { formatCurrency } from '../../lib/utils';
@@ -196,22 +197,21 @@ export const AddJobPage: React.FC = () => {
       const jobRes = await query<{ id: number }>('SELECT last_insert_rowid() as id');
       const newJobId = jobRes[0].id;
 
-      // 4. If initial payment was paid, log credit transaction to financial ledger
+      // 4. If initial payment was paid, post a balanced receipt voucher
+      //    (links customer_id + reference_job_id — fixes the old NULL FK bug)
       if (paymentStatus === 'paid' && safeCharges > 0) {
-        await execute(
-          `INSERT INTO financial_transactions (
-            date, type, amount, category, payment_method, customer_name,
-            token_number, description, notes, created_at, updated_at
-          ) VALUES (?, 'credit', ?, 'repair_income', 'cash', ?, ?, ?, ?, datetime('now'), datetime('now'))`,
-          [
-            receiveDate,
-            safeCharges,
-            customerName,
-            actualToken,
-            `Repair Charges received for ${actualToken} (${model || jobType})`,
-            'Auto-recorded from Job Intake'
-          ]
-        );
+        await postVoucher({
+          date: receiveDate,
+          type: 'receipt',
+          amount: safeCharges,
+          categoryAccountCode: 3000,  // Repair Income
+          paymentAccountCode: 1000,   // Cash in Hand
+          partyCustomerId: finalCustomerId,
+          referenceJobId: newJobId,
+          referenceToken: actualToken,
+          description: `Repair charges received for ${actualToken} (${model || jobType})`,
+          notes: 'Auto-recorded from Job Intake'
+        });
       }
 
       toast.success(`Repair job ${actualToken} registered successfully!`);

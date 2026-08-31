@@ -34,6 +34,10 @@ import { useSettingsStore } from '../../store/settings';
 import { generateWhatsAppMessage, openWhatsAppDeeplink } from '../../lib/whatsapp';
 import { JobProgressTracker } from '../../components/shared/JobProgressTracker';
 import { PaymentStatusCard } from '../../components/shared/paymentStatus';
+import { VoucherForm } from '../payments/VoucherForm';
+import { loadAccounts, loadPaymentAccounts } from '../../lib/finance';
+import { Account } from '../../types/finance';
+import { Receipt } from 'lucide-react';
 
 export const JobDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -45,6 +49,9 @@ export const JobDetailPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showNotifyModal, setShowNotifyModal] = useState(false);
   const [notifyTemplate, setNotifyTemplate] = useState<'ready' | 'update' | 'payment_reminder'>('ready');
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [paymentAccounts, setPaymentAccounts] = useState<Account[]>([]);
+  const [allAccounts, setAllAccounts] = useState<Account[]>([]);
 
   useEffect(() => {
     if (id) loadJob(parseInt(id, 10));
@@ -68,13 +75,26 @@ export const JobDetailPage: React.FC = () => {
       }
       setJob(res[0]);
 
-      // Sum of cashbook credits received for this job (indexed on
-      // token_number+type) — powers the PARTIAL "remaining balance" display.
+      // Sum of voucher credits received for this job — powers the PARTIAL
+      // "remaining balance" display. Falls back to legacy financial_transactions
+      // for jobs pre-dating the voucher migration.
       const paidRows = await query<{ c: number }>(
-        "SELECT COALESCE(SUM(amount), 0) as c FROM financial_transactions WHERE type = 'credit' AND token_number = ?",
+        `SELECT COALESCE(SUM(vl.credit), 0) AS c
+         FROM voucher_lines vl
+         JOIN vouchers v ON v.id = vl.voucher_id
+         WHERE v.type = 'receipt' AND vl.reference_token = ?`,
         [res[0].token_number]
       );
-      setPaidAmount(paidRows.length > 0 ? Number(paidRows[0].c) || 0 : 0);
+      if (paidRows.length > 0 && Number(paidRows[0].c) > 0) {
+        setPaidAmount(Number(paidRows[0].c));
+      } else {
+        // Legacy fallback for pre-voucher data
+        const legacyRows = await query<{ c: number }>(
+          "SELECT COALESCE(SUM(amount), 0) as c FROM financial_transactions WHERE type = 'credit' AND token_number = ?",
+          [res[0].token_number]
+        );
+        setPaidAmount(legacyRows.length > 0 ? Number(legacyRows[0].c) || 0 : 0);
+      }
     } catch (e) {
       console.error('Failed to load job details:', e);
       toast.error('Failed to load repair record.');
@@ -135,6 +155,17 @@ export const JobDetailPage: React.FC = () => {
     );
   };
 
+  const openPaymentForm = async () => {
+    const [accts, payAccts] = await Promise.all([loadAccounts(), loadPaymentAccounts()]);
+    setAllAccounts(accts);
+    setPaymentAccounts(payAccts);
+    setShowPaymentForm(true);
+  };
+
+  const handlePaymentPosted = () => {
+    if (job) loadJob(job.id);
+  };
+
   const handlePrint = () => {
     navigate(`/jobs/${job!.id}/print?type=payment_receipt`);
   };
@@ -179,6 +210,16 @@ export const JobDetailPage: React.FC = () => {
 
         {/* Action buttons */}
         <div className="flex items-center gap-2">
+          {job.payment_status !== 'complimentary' && (
+            <button
+              onClick={openPaymentForm}
+              className="btn-success"
+            >
+              <Receipt className="w-4 h-4" />
+              <span>Record Payment</span>
+            </button>
+          )}
+
           <button
             onClick={() => setShowNotifyModal(true)}
             className="btn-success"
@@ -584,6 +625,18 @@ export const JobDetailPage: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
+      {/* Voucher Form (Record Payment) */}
+      {job && (
+        <VoucherForm
+          open={showPaymentForm}
+          onClose={() => setShowPaymentForm(false)}
+          onPosted={handlePaymentPosted}
+          accounts={allAccounts}
+          paymentAccounts={paymentAccounts}
+          initialFlow="receipt"
+          presetJob={job}
+        />
+      )}
     </>
   );
 };

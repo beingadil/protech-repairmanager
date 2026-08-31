@@ -2,6 +2,7 @@ import { app } from 'electron';
 import Database from 'better-sqlite3';
 import { existsSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { FINANCE_SCHEMA, backfillFinanceV2 } from '../shared/financeSchema';
 
 // Native SQLite engine living in the MAIN process. The renderer talks to it
 // over IPC (see ipc.ts) — no more sql.js WASM snapshots into IndexedDB.
@@ -198,6 +199,47 @@ const MIGRATIONS = [
   `
 ];
 
+// ---------------------------------------------------------------------------
+// Finance v2: apply the shared additive schema + one-time legacy backfill.
+// The DDL and backfill logic live in app/shared/financeSchema.ts so the
+// vitest SQL regression suite can run the EXACT production migration.
+// Before the first backfill attempt we snapshot the DB file for recovery.
+// ---------------------------------------------------------------------------
+
+function applyFinanceV2(db: Database.Database): void {
+  try {
+    db.exec(FINANCE_SCHEMA);
+  } catch (err) {
+    console.warn('[db] Finance v2 schema warning:', err);
+  }
+
+  const flag = db
+    .prepare('SELECT value FROM settings WHERE key = ?')
+    .get('finance_v2_backfilled') as { value: string } | undefined;
+  if (flag && flag.value === '1') return;
+
+  // Auto-snapshot before first backfill: if anything goes wrong the user can
+  // restore the exact pre-migration file (one copy, overwritten each attempt
+  // until the backfill succeeds).
+  try {
+    const target = getDbPath();
+    db.pragma('wal_checkpoint(TRUNCATE)');
+    const snapshot = `${target}.pre-finance-v2`;
+    writeFileSync(snapshot, readFileSync(target));
+    console.info('[db] Pre-finance-v2 snapshot written:', snapshot);
+  } catch (err) {
+    console.warn('[db] Pre-migration snapshot failed (continuing):', err);
+  }
+
+  try {
+    backfillFinanceV2(db);
+    console.info('[db] Finance v2 backfill completed.');
+  } catch (err) {
+    // Flag stays unset → retried on next launch. Snapshot exists for recovery.
+    console.error('[db] Finance v2 backfill FAILED (will retry next launch):', err);
+  }
+}
+
 function cleanDemoSeededData(db: Database.Database): void {
   try {
     // Purge any legacy sample jobs/inventory/customers from early dev iterations
@@ -240,6 +282,7 @@ export function getDb(): Database.Database {
     } catch { /* already exists */ }
 
     cleanDemoSeededData(dbInstance);
+    applyFinanceV2(dbInstance);
     migrationsRan = true;
   }
 
@@ -316,6 +359,9 @@ export function importBinary(buf: Buffer): void {
   writeFileSync(tmp, buf);
   rmSidecars(target);
   renameSync(tmp, target);
+  // The restored file may predate the finance-v2 schema — force a full
+  // migration pass so older backups gain the new tables + backfill.
+  migrationsRan = false;
   const reopened = getDb();
   const check = reopened.pragma('integrity_check', { simple: true });
   if (check !== 'ok') {
@@ -329,6 +375,9 @@ export function resetToProduction(): void {
   const target = getDbPath();
   rmSidecars(target);
   if (existsSync(target)) rmSync(target);
+  // A factory wipe must not leave the pre-finance-v2 snapshot behind.
+  const snapshot = `${target}.pre-finance-v2`;
+  if (existsSync(snapshot)) rmSync(snapshot);
   migrationsRan = false;
   getDb();
 }

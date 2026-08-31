@@ -25,9 +25,9 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { query, execute } from '../../lib/db';
+import { postVoucher, loadPartyLedger, PartyLedgerRow } from '../../lib/finance';
 import { Customer, PartyType } from '../../types/customer';
 import { Job } from '../../types/job';
-import { FinancialTransaction } from '../../types/payment';
 import { formatCurrency, formatDate, isOverdue } from '../../lib/utils';
 import { exportCustomersToCSV } from '../../lib/export-utils';
 import { StatusBadge } from '../../components/shared/StatusBadge';
@@ -50,7 +50,7 @@ export const CustomersPage: React.FC = () => {
   // Selected party for detailed history view
   const [selectedParty, setSelectedParty] = useState<Customer | null>(null);
   const [partyJobs, setPartyJobs] = useState<Job[]>([]);
-  const [partyTransactions, setPartyTransactions] = useState<FinancialTransaction[]>([]);
+  const [partyLedgerRows, setPartyLedgerRows] = useState<PartyLedgerRow[]>([]);
   const [historyTab, setHistoryTab] = useState<'laptops' | 'ledger'>('laptops');
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
@@ -121,14 +121,9 @@ export const CustomersPage: React.FC = () => {
       );
       setPartyJobs(jobs);
 
-      // 2. Fetch financial transactions
-      const txs = await query<FinancialTransaction>(
-        `SELECT * FROM financial_transactions 
-         WHERE customer_name = ? OR supplier_name = ?
-         ORDER BY date DESC, id DESC`,
-        [party.name, party.name]
-      );
-      setPartyTransactions(txs);
+      // 2. Fetch party ledger (ID-based via vouchers — no name-string joins)
+      const ledger = await loadPartyLedger(party.id);
+      setPartyLedgerRows(ledger);
     } catch (err) {
       console.error('Failed to load party history:', err);
       toast.error('Failed to load history details.');
@@ -199,21 +194,16 @@ export const CustomersPage: React.FC = () => {
 
     try {
       const isCredit = paymentType === 'credit';
-      await execute(
-        `INSERT INTO financial_transactions (
-          date, type, amount, category, payment_method, customer_name, supplier_name,
-          description, notes, created_at, updated_at
-        ) VALUES (date('now'), ?, ?, ?, 'cash', ?, ?, ?, ?, datetime('now'), datetime('now'))`,
-        [
-          paymentType,
-          amt,
-          isCredit ? 'repair_income' : 'market_supplier_payment',
-          isCredit ? selectedParty.name : null,
-          !isCredit ? selectedParty.name : null,
-          paymentDesc || `${isCredit ? 'Payment received from' : 'Payment made to'} ${selectedParty.name}`,
-          'Direct from Customer/Supplier profile'
-        ]
-      );
+      await postVoucher({
+        date: new Date().toISOString().split('T')[0],
+        type: isCredit ? 'receipt' : 'payment',
+        amount: amt,
+        categoryAccountCode: isCredit ? 3000 : 4010,  // Repair Income or Supplier Payments
+        paymentAccountCode: 1000,   // Cash in Hand
+        partyCustomerId: selectedParty.id,
+        description: paymentDesc || `${isCredit ? 'Payment received from' : 'Payment made to'} ${selectedParty.name}`,
+        notes: 'Direct from Customer/Supplier profile'
+      });
 
       toast.success(`Recorded ${formatCurrency(amt)} ${isCredit ? 'Credit (+)' : 'Debit (-)'} voucher!`);
       setIsPaymentModalOpen(false);
@@ -579,7 +569,7 @@ export const CustomersPage: React.FC = () => {
                       }`}
                     >
                       <Receipt className="w-3.5 h-3.5 inline mr-1" />
-                      Ledger & Payments ({partyTransactions.length})
+                      Ledger & Payments ({partyLedgerRows.length})
                     </button>
                   </div>
 
@@ -650,41 +640,41 @@ export const CustomersPage: React.FC = () => {
                   )
                 ) : (
                   /* Ledger History */
-                  partyTransactions.length === 0 ? (
+                  partyLedgerRows.length === 0 ? (
                     <div className="py-12 text-center text-slate-400">
                       No ledger vouchers recorded for this party yet.
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {partyTransactions.map((tx) => (
+                      {partyLedgerRows.map((r) => (
                         <div
-                          key={tx.id}
+                          key={r.voucher_id}
                           className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 shadow-xs flex items-center justify-between text-xs"
                         >
                           <div>
                             <div className="flex items-center gap-2">
                               <span
                                 className={`font-bold px-2 py-0.5 rounded text-[10px] ${
-                                  tx.type === 'credit'
+                                  r.type === 'receipt'
                                     ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300'
                                     : 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300'
                                 }`}
                               >
-                                {tx.type.toUpperCase()}
+                                {r.type.toUpperCase()}
                               </span>
-                              <span className="font-semibold text-slate-900 dark:text-slate-100">{tx.description}</span>
+                              <span className="font-semibold text-slate-900 dark:text-slate-100">{r.description}</span>
                             </div>
-                            <p className="text-slate-400 mt-0.5">{formatDate(tx.date)} • {tx.payment_method.toUpperCase()}</p>
+                            <p className="text-slate-400 mt-0.5">{formatDate(r.date)} • {r.voucher_no}</p>
                           </div>
 
                           <span
                             className={`font-black text-sm ${
-                              tx.type === 'credit'
+                              r.type === 'receipt'
                                 ? 'text-emerald-600 dark:text-emerald-400'
                                 : 'text-rose-600 dark:text-rose-400'
                             }`}
                           >
-                            {tx.type === 'credit' ? '+' : '-'}{formatCurrency(tx.amount)}
+                            {r.type === 'receipt' ? '+' : '-'}{formatCurrency(r.amount)}
                           </span>
                         </div>
                       ))}
